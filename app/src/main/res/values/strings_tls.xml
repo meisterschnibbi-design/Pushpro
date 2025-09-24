@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="email_tls_mode">Encryption</string>
+    <string name="tls_none">None</string>
+    <string name="tls_starttls">STARTTLS (587)</string>
+    <string name="tls_ssl">SSL (465)</string>
+</resources>
