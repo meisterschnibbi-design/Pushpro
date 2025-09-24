@@ -26,6 +26,7 @@ class WebhookSettingsActivity : AppCompatActivity() {
         btnSave.setOnClickListener {
             prefs.edit()
                 .putString("wh_url", urlInput.text.toString().trim())
+                // wh_body kann in einem anderen Screen gesetzt werden; hier nicht erforderlich
                 .putString("whitelist", wl?.text?.toString()?.trim() ?: (prefs.getString("whitelist","") ?: ""))
                 .putString("contains_webhook", filt?.text?.toString()?.trim() ?: "")
                 .apply()
@@ -34,21 +35,26 @@ class WebhookSettingsActivity : AppCompatActivity() {
 
         btnTest.setOnClickListener {
             Thread {
+                val defaultPayload = """{"ok":true}"""
                 var code = -1
                 var ok = false
                 try {
                     val u = URL(urlInput.text.toString().trim())
                     val conn = (u.openConnection() as HttpURLConnection).apply {
-                        connectTimeout = 8000; readTimeout = 8000
+                        connectTimeout = 8000
+                        readTimeout = 8000
                         requestMethod = "POST"
                         setRequestProperty("Content-Type", "application/json; charset=utf-8")
                         doOutput = true
                     }
-                    val payload = prefs.getString("wh_body", "{"ok":true}") ?: "{"ok":true}"
+                    val payload = prefs.getString("wh_body", defaultPayload) ?: defaultPayload
                     conn.outputStream.use { it.write(payload.toByteArray(Charsets.UTF_8)) }
-                    code = conn.responseCode; conn.disconnect()
+                    code = conn.responseCode
+                    conn.disconnect()
                     ok = code in 200..299
-                } catch (_: Exception) { ok = false }
+                } catch (_: Exception) {
+                    ok = false
+                }
                 LogUtil.append(this, (if (ok) "Webhook test success: " else "Webhook test fail: ") + code.toString())
                 runOnUiThread { Toast.makeText(this, if (ok) "OK" else "Failed", Toast.LENGTH_SHORT).show() }
             }.start()
