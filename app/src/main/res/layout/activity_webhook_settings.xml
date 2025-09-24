@@ -14,7 +14,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="HTTP Method"
-            app:endIconMode="dropdown">
+            app:endIconMode="dropdown_menu">
             <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/inputHttpMethod"
                 android:layout_width="match_parent"
@@ -27,7 +27,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Content Type"
-            app:endIconMode="dropdown"
+            app:endIconMode="dropdown_menu"
             android:layout_marginTop="12dp">
             <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/inputContentType"
@@ -41,7 +41,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Headers preset"
-            app:endIconMode="dropdown"
+            app:endIconMode="dropdown_menu"
             android:layout_marginTop="12dp">
             <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/inputHeaders"
@@ -55,7 +55,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="JSON Body Template"
-            app:endIconMode="dropdown"
+            app:endIconMode="dropdown_menu"
             android:layout_marginTop="12dp">
             <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/inputJsonTemplate"
