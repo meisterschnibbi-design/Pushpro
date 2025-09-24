@@ -6,26 +6,35 @@ import pro.pushpro.app.util.LogUtil
 
 class NotificationRelayService : NotificationListenerService() {
 
+    private fun wildcardToRegex(pattern: String): Regex {
+        val sb = StringBuilder()
+        for (ch in pattern) {
+            when (ch) {
+                '*' -> sb.append(".*")
+                '?' -> sb.append('.')
+                else -> sb.append(Regex.escape(ch.toString()))
+            }
+        }
+        return Regex("^" + sb.toString() + "$")
+    }
+
     private fun patternsFrom(pref: String): List<Regex> {
         val raw = getSharedPreferences("pushpro_prefs", MODE_PRIVATE).getString(pref, "") ?: ""
         if (raw.isBlank()) return emptyList()
         return raw.split(",").mapNotNull { token ->
             val t = token.trim()
-            if (t.isEmpty()) null else {
-                val escaped = Regex.escape(t).replace("\*", ".*")
-                try { Regex("^$escaped$") } catch (_: Exception) { null }
-            }
+            if (t.isEmpty()) null else wildcardToRegex(t)
         }
     }
 
     private fun whitelisted(pkg: String): Boolean {
         val list = patternsFrom("whitelist")
-        if (list.isEmpty()) return true
+        if (list.isEmpty()) return true      // leere Whitelist => alles erlaubt
         return list.any { it.containsMatchIn(pkg) }
     }
 
     private fun containsFilterOk(channel: String, title: String, text: String): Boolean {
-        val key = "contains_$channel"
+        val key = "contains_$channel"        // contains_email / contains_telegram / contains_webhook
         val needle = (getSharedPreferences("pushpro_prefs", MODE_PRIVATE).getString(key, "") ?: "").trim()
         if (needle.isEmpty()) return true
         val hay = (title + " " + text).lowercase()
@@ -60,13 +69,12 @@ class NotificationRelayService : NotificationListenerService() {
         val whConfigured = !prefs.getString("wh_url","")!!.isBlank()
 
         val sent = mutableListOf<String>()
-
-        if (emailConfigured && containsFilterOk("email", title, text)) sent.add("email")
+        if (emailConfigured && containsFilterOk("email", title, text))    sent.add("email")
         if (tgConfigured    && containsFilterOk("telegram", title, text)) sent.add("telegram")
-        if (whConfigured    && containsFilterOk("webhook", title, text)) sent.add("webhook")
+        if (whConfigured    && containsFilterOk("webhook", title, text))  sent.add("webhook")
 
         if (sent.isEmpty()) LogUtil.append(this, "Relay no-op: " + pkg)
-        else LogUtil.append(this, "Relay OK (" + sent.joinToString("/") + "): " + pkg)
+        else                LogUtil.append(this, "Relay OK (" + sent.joinToString("/") + "): " + pkg)
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {

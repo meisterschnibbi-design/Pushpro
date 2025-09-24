@@ -16,19 +16,16 @@ class WebhookSettingsActivity : AppCompatActivity() {
 
         val prefs = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
         val urlInput = findViewById<EditText>(R.id.inputUrl)
-        val bodyInput = findViewById<EditText?>(R.id.inputBody)
-        val wl   = findViewById<EditText?>(R.id.inputWhitelist)
-        val filt = findViewById<EditText?>(R.id.inputContains)
+        val wl   = findViewById<EditText?>(R.id.inputWhitelist)   // optional im Layout
+        val filt = findViewById<EditText?>(R.id.inputContains)    // optional im Layout
         val btnSave = findViewById<Button>(R.id.btnSave)
         val btnTest = findViewById<Button>(R.id.btnSendTest)
 
         urlInput.setText(prefs.getString("wh_url", "") ?: "")
-        bodyInput?.setText(prefs.getString("wh_body", "{\"ok\":true}"))
 
         btnSave.setOnClickListener {
             prefs.edit()
                 .putString("wh_url", urlInput.text.toString().trim())
-                .putString("wh_body", bodyInput?.text?.toString() ?: "{\"ok\":true}")
                 .putString("whitelist", wl?.text?.toString()?.trim() ?: (prefs.getString("whitelist","") ?: ""))
                 .putString("contains_webhook", filt?.text?.toString()?.trim() ?: "")
                 .apply()
@@ -47,7 +44,7 @@ class WebhookSettingsActivity : AppCompatActivity() {
                         setRequestProperty("Content-Type", "application/json; charset=utf-8")
                         doOutput = true
                     }
-                    val payload = bodyInput?.text?.toString() ?: "{\"ok\":true}"
+                    val payload = prefs.getString("wh_body", "{"ok":true}") ?: "{"ok":true}"
                     conn.outputStream.use { it.write(payload.toByteArray(Charsets.UTF_8)) }
                     code = conn.responseCode; conn.disconnect()
                     ok = code in 200..299
