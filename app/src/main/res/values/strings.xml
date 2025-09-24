@@ -50,4 +50,10 @@
   <string name="telegram_thread_id_hint">Thread/Topic ID (optional)</string>
   <string name="send_test">Send Test</string>
   <string name="title_webhook">Webhook</string>
+    <string name="email_title">Email Settings</string>
+    <string name="email_host">SMTP host</string>
+    <string name="email_user">Username</string>
+    <string name="email_password">Password</string>
+    <string name="saved">Saved</string>
+    <string name="status_no_channel">ON • no channel configured</string>
 </resources>
