@@ -10,11 +10,24 @@
         android:padding="16dp">
 
         <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="URL">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputUrl"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textUri"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="HTTP Method"
-            app:endIconMode="dropdown_menu">
+            app:endIconMode="dropdown_menu"
+            android:layout_marginTop="12dp">
             <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/inputHttpMethod"
                 android:layout_width="match_parent"
@@ -65,11 +78,11 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSaveWebhook"
+            android:id="@+id/btnSendTest"
             style="@style/Widget.MaterialComponents.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Save"
+            android:text="Send Test"
             android:layout_marginTop="16dp"/>
     </LinearLayout>
 </ScrollView>

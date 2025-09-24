@@ -24,8 +24,8 @@ class WebhookSettingsActivity : AppCompatActivity() {
         setup(R.id.inputHeaders, R.array.header_presets)
         setup(R.id.inputJsonTemplate, R.array.json_body_templates)
 
-        findViewById<android.view.View>(R.id.btnSaveWebhook).setOnClickListener {
-            Toast.makeText(this, "Webhook saved", Toast.LENGTH_SHORT).show()
+        findViewById<android.view.View>(R.id.btnSendTest).setOnClickListener {
+            Toast.makeText(this, "Webhook test sent", Toast.LENGTH_SHORT).show()
         }
     }
 }
