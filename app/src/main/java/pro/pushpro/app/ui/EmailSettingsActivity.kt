@@ -6,12 +6,12 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import pro.pushpro.app.R
 import pro.pushpro.app.util.LogUtil
-import jakarta.mail.Message
-import jakarta.mail.PasswordAuthentication
-import jakarta.mail.Session
-import jakarta.mail.Transport
-import jakarta.mail.internet.InternetAddress
-import jakarta.mail.internet.MimeMessage
+import javax.mail.Message
+import javax.mail.PasswordAuthentication
+import javax.mail.Session
+import javax.mail.Transport
+import javax.mail.internet.InternetAddress
+import javax.mail.internet.MimeMessage
 import java.util.Properties
 
 class EmailSettingsActivity : AppCompatActivity() {
@@ -93,7 +93,7 @@ class EmailSettingsActivity : AppCompatActivity() {
 
                 var ok = false
                 try {
-                    val session = Session.getInstance(props, object: jakarta.mail.Authenticator() {
+                    val session = Session.getInstance(props, object: javax.mail.Authenticator() {
                         override fun getPasswordAuthentication() =
                             PasswordAuthentication(userV, passV)
                     })
