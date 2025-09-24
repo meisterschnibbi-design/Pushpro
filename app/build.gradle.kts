@@ -22,8 +22,21 @@ android {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
   }
-  kotlinOptions {
-    jvmTarget = "17"
+  kotlinOptions { jvmTarget = "17" }
+
+  // Fix for duplicate META-INF resources from android-mail / android-activation
+  packaging {
+    resources {
+      excludes += setOf(
+        "META-INF/DEPENDENCIES",
+        "META-INF/NOTICE",
+        "META-INF/NOTICE.*",
+        "META-INF/NOTICE.md",
+        "META-INF/LICENSE",
+        "META-INF/LICENSE.*",
+        "META-INF/LICENSE.md"
+      )
+    }
   }
 }
 dependencies {
@@ -35,7 +48,7 @@ dependencies {
   implementation("androidx.activity:activity-ktx:1.9.2")
   implementation("androidx.recyclerview:recyclerview:1.3.2")
 
-  // Correct mail dependencies per CI requirements:
+  // Mail dependencies (no jakarta.mail)
   implementation("com.sun.mail:android-mail:1.6.7")
   implementation("com.sun.mail:android-activation:1.6.7")
 }
