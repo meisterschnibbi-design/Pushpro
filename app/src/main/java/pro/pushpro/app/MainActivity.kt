@@ -1,11 +1,17 @@
 package pro.pushpro.app
 
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.Switch
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import pro.pushpro.app.ui.EmailSettingsActivity
+import pro.pushpro.app.ui.SettingsActivity
+import pro.pushpro.app.ui.TelegramSettingsActivity
+import pro.pushpro.app.ui.WebhookSettingsActivity
 import pro.pushpro.app.util.LogUtil
 
 class MainActivity : AppCompatActivity() {
@@ -18,6 +24,20 @@ class MainActivity : AppCompatActivity() {
         val lamp = findViewById<ImageView>(R.id.imgLamp)
         val statusText = findViewById<TextView>(R.id.txtStatus)
         val sw = findViewById<Switch>(R.id.switchGlobal)
+
+        // Primary navigation buttons (ids as defined in activity_main.xml)
+        findViewById<Button?>(R.id.btnSettings)?.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+        findViewById<Button?>(R.id.btnWebhook)?.setOnClickListener {
+            startActivity(Intent(this, WebhookSettingsActivity::class.java))
+        }
+        findViewById<Button?>(R.id.btnEmail)?.setOnClickListener {
+            startActivity(Intent(this, EmailSettingsActivity::class.java))
+        }
+        findViewById<Button?>(R.id.btnTelegram)?.setOnClickListener {
+            startActivity(Intent(this, TelegramSettingsActivity::class.java))
+        }
 
         fun anyChannelConfigured(): Boolean {
             val emailConfigured = !prefs.getString("email_host","")!!.isBlank()
@@ -34,9 +54,9 @@ class MainActivity : AppCompatActivity() {
             val on = prefs.getBoolean("global_on", false)
             val any = anyChannelConfigured()
             val color = when {
-                !on       -> R.color.status_off
-                on && !any -> R.color.status_warn
-                else      -> R.color.status_on
+                !on       -> R.color.status_off     // Rot
+                on && !any -> R.color.status_warn   // Orange
+                else      -> R.color.status_on      // Grün
             }
             lamp.setColorFilter(ContextCompat.getColor(this, color))
             statusText.text = when {
