@@ -1,58 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="match_parent"
-    android:fillViewport="true">
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
 
-    <LinearLayout
-        android:id="@+id/rootEmail"
-        android:orientation="vertical"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:padding="16dp">
+    <TextView
+        android:id="@+id/titleEmail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Email Settings"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
 
-        <TextView
-            android:id="@+id/title"
-            android:text="@string/email_title"
-            android:textSize="20sp" android:textStyle="bold"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/switchEnableEmail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enable"
+        app:layout_constraintTop_toTopOf="@id/titleEmail"
+        app:layout_constraintBottom_toBottomOf="@id/titleEmail"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
-        <EditText
-            android:id="@+id/inputHost"
-            android:hint="@string/email_host"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/emailAddressLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Email"
+        app:layout_constraintTop_toBottomOf="@id/titleEmail"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputEmail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+    </com.google.android.material.textfield.TextInputLayout>
 
-        <Spinner
-            android:id="@+id/spinnerTls"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnSaveEmail"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Save"
+        app:layout_constraintTop_toBottomOf="@id/emailAddressLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"/>
 
-        <EditText
-            android:id="@+id/inputPort"
-            android:inputType="number" android:enabled="false"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-
-        <EditText
-            android:id="@+id/inputUser"
-            android:hint="@string/email_user"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-
-        <EditText
-            android:id="@+id/inputPass"
-            android:hint="@string/email_password"
-            android:inputType="textPassword"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-
-        <EditText
-            android:id="@+id/inputRecipient"
-            android:hint="@string/email_recipient"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-
-        <Button
-            android:id="@+id/btnSave"
-            android:text="@string/save"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-
-        <Button
-            android:id="@+id/btnSendTestEmail"
-            android:text="@string/send_test"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-    </LinearLayout>
-</ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>
