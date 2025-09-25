@@ -1,3 +1,8 @@
 #!/usr/bin/env sh
-CLASSPATH=$(dirname "$0")/gradle/wrapper/gradle-wrapper.jar
-exec ${JAVA_HOME:+$JAVA_HOME/bin/}java -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
+DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "$DIR/gradle/wrapper/gradle-wrapper.jar" ]; then
+  exec java -jar "$DIR/gradle/wrapper/gradle-wrapper.jar" "$@"
+else
+  echo "gradle-wrapper.jar missing. Android Studio will regenerate it on Sync."
+  exec gradle "$@"
+fi
