@@ -1,17 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="pro.pushpro.app">
-    <application android:label="PushPro" android:theme="@style/Theme.Material3.DayNight.NoActionBar">
-        <activity android:name=".ui.settings.SettingsActivity" >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity android:name=".ui.settings.WebhookSettingsActivity" />
-        <activity android:name=".ui.settings.EmailSettingsActivity" />
-        <activity android:name=".ui.settings.TelegramSettingsActivity" />
-        <activity android:name=".ui.access.AccessActivity" />
-        <activity android:name=".ui.logs.LogViewerActivity" />
-        <activity android:name=".ui.queue.OfflineQueueActivity" />
-    </application>
+  <application android:label="PushPro" android:theme="@style/Theme.Material3.DayNight.NoActionBar">
+    <activity android:name=".ui.settings.SettingsActivity">
+      <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+    </activity>
+    <activity android:name=".ui.settings.WebhookSettingsActivity"/>
+    <activity android:name=".ui.settings.EmailSettingsActivity"/>
+    <activity android:name=".ui.settings.TelegramSettingsActivity"/>
+    <activity android:name=".ui.access.AccessActivity"/>
+    <activity android:name=".ui.logs.LogViewerActivity"/>
+    <activity android:name=".ui.queue.OfflineQueueActivity"/>
+  </application>
 </manifest>
