@@ -1,4 +1,5 @@
-package pro.pushpro.app.ui.settings
+
+package pro.pushpro.app.ui
 
 import android.os.Bundle
 import android.text.InputType
