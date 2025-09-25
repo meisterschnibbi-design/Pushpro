@@ -19,11 +19,7 @@ android {
     }
     debug { debuggable true }
   }
-  packaging {
-    resources {
-      pickFirsts += ["META-INF/NOTICE.md","META-INF/LICENSE.md","META-INF/DEPENDENCIES","META-INF/NOTICE","META-INF/LICENSE"]
-    }
-  }
+  packaging { resources { pickFirsts += ["META-INF/NOTICE.md","META-INF/LICENSE.md","META-INF/DEPENDENCIES","META-INF/NOTICE","META-INF/LICENSE"] } }
   compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
   kotlinOptions { jvmTarget = '17' }
 }
