@@ -7,5 +7,6 @@ import com.pushpro.R
 class BaseSettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
     }
 }

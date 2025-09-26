@@ -7,5 +7,6 @@ import com.pushpro.R
 class DiagnosticsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
     }
 }

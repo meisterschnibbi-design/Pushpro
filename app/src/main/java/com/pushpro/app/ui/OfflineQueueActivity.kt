@@ -7,5 +7,6 @@ import com.pushpro.R
 class OfflineQueueActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
     }
 }

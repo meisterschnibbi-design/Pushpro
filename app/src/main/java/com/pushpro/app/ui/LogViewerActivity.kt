@@ -7,5 +7,6 @@ import com.pushpro.R
 class LogViewerActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
     }
 }
