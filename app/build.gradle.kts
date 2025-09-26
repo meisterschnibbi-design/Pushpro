@@ -2,11 +2,11 @@
 plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
 android {
   namespace = "pro.pushpro.app"
-  compileSdk = 35
+  compileSdk = 34
   defaultConfig {
     applicationId = "pro.pushpro.app"
     minSdk = 24
-    targetSdk = 35
+    targetSdk = 34
     versionCode = 98
     versionName = "v98"
     vectorDrawables { useSupportLibrary = true }
