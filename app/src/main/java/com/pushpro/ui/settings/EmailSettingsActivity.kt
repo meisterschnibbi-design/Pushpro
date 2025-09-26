@@ -9,7 +9,7 @@ class EmailSettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_email_settings)
 
-        // R reference check to ensure resources are linked
+        // Views referenced by code — must exist in XML:
         findViewById<android.view.View>(R.id.rootEmail)
         findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputFrom)
         findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputSubjectPrefix)
