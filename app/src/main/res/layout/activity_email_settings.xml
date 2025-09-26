@@ -14,7 +14,19 @@
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:endIconMode="dropdown_menu">
+            app:endIconMode="clear_text">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputFrom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="From (email)"
+                android:inputType="textEmailAddress"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:endIconMode="clear_text">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputSubjectPrefix"
                 android:layout_width="match_parent"
@@ -86,7 +98,8 @@
         <Spinner
             android:id="@+id/spinnerTls"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:entries="@array/email_tls_modes" />
 
         <com.google.android.material.switchmaterial.SwitchMaterial
             android:id="@+id/switchEnableEmail"

@@ -10,44 +10,44 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:endIconMode="dropdown_menu">
+        app:endIconMode="clear_text">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/inputToken"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Bot Token"
-            android:inputType="text" />
+            android:inputType="text"/>
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:endIconMode="dropdown_menu">
+        app:endIconMode="clear_text">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/inputChatId"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Chat ID"
-            android:inputType="text" />
+            android:inputType="text"/>
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:endIconMode="dropdown_menu">
+        app:endIconMode="clear_text">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/inputChatIds"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Chat IDs (comma-separated)"
-            android:inputType="text" />
+            android:inputType="text"/>
     </com.google.android.material.textfield.TextInputLayout>
 
     <Spinner
         android:id="@+id/spinnerParse"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:entries="@array/parse_modes" />
+        android:entries="@array/telegram_parse_modes" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSendTestTelegram"

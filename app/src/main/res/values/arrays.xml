@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="parse_modes">
+    <string-array name="email_tls_modes">
+        <item>SSL</item>
+        <item>TLS</item>
+        <item>STARTTLS</item>
+        <item>NONE</item>
+    </string-array>
+
+    <string-array name="telegram_parse_modes">
         <item>Markdown</item>
         <item>MarkdownV2</item>
         <item>HTML</item>
@@ -19,5 +26,15 @@
         <item>application/json</item>
         <item>application/x-www-form-urlencoded</item>
         <item>text/plain</item>
+    </string-array>
+
+    <string-array name="header_presets">
+        <item>Content-Type: application/json</item>
+        <item>Accept: application/json</item>
+    </string-array>
+
+    <string-array name="json_body_templates">
+        <item>{"title":"$title","text":"$text"}</item>
+        <item>{"message":"$text"}</item>
     </string-array>
 </resources>
