@@ -9,7 +9,6 @@ class TelegramSettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_telegram_settings)
 
-        // Views referenced by code — must exist in XML:
         findViewById<android.view.View>(R.id.rootTelegram)
         findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputToken)
         findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputChatId)

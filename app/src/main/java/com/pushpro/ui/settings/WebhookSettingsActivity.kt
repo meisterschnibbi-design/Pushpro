@@ -9,7 +9,6 @@ class WebhookSettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_webhook_settings)
 
-        // Views referenced by code — must exist in XML:
         findViewById<android.view.View>(R.id.rootWebhook)
         findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputUrl)
         findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputHttpMethod)
