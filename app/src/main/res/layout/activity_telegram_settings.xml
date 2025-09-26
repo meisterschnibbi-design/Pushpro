@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootTelegram"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -10,11 +11,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:endIconMode="dropdown_menu">
-
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/inputToken"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:hint="Bot Token"
             android:inputType="text" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -22,11 +23,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:endIconMode="dropdown_menu">
-
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/inputChatId"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:hint="Chat ID"
             android:inputType="text" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -34,24 +35,19 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:endIconMode="dropdown_menu">
-
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/inputChatIds"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:hint="Chat IDs (comma-separated)"
             android:inputType="text" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
+    <Spinner
+        android:id="@+id/spinnerParse"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:endIconMode="dropdown_menu">
-
-        <AutoCompleteTextView
-            android:id="@+id/parseModeDropdown"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-    </com.google.android.material.textfield.TextInputLayout>
+        android:entries="@array/parse_modes" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSendTestTelegram"

@@ -5,6 +5,7 @@
     android:layout_height="match_parent">
 
     <LinearLayout
+        android:id="@+id/rootEmail"
         android:orientation="vertical"
         android:padding="16dp"
         android:layout_width="match_parent"
@@ -14,60 +15,72 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:endIconMode="dropdown_menu">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputSubjectPrefix"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Subject prefix"
+                android:inputType="text"/>
+        </com.google.android.material.textfield.TextInputLayout>
 
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:endIconMode="dropdown_menu">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputHost"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textUri" />
+                android:hint="SMTP Host"
+                android:inputType="textUri"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:endIconMode="dropdown_menu">
-
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputPort"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="number" />
+                android:hint="SMTP Port"
+                android:inputType="number"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:endIconMode="dropdown_menu">
-
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputUser"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textEmailAddress" />
+                android:hint="Username"
+                android:inputType="textEmailAddress"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:endIconMode="dropdown_menu">
-
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputPass"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textPassword" />
+                android:hint="Password"
+                android:inputType="textPassword"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:endIconMode="dropdown_menu">
-
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputRecipient"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textEmailAddress" />
+                android:hint="Recipient Email"
+                android:inputType="textEmailAddress"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <Spinner

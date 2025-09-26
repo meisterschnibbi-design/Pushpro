@@ -1,9 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string-array name="http_methods"><item>GET</item><item>POST</item><item>PUT</item><item>PATCH</item><item>DELETE</item></string-array>
-  <string-array name="content_types"><item>application/json</item><item>application/x-www-form-urlencoded</item><item>text/plain</item><item>application/xml</item></string-array>
-  <string-array name="header_presets"><item>Authorization: Bearer &lt;token&gt;</item><item>Content-Type: application/json</item><item>X-Request-Id: ${uuid}</item></string-array>
-  <string-array name="json_body_templates"><item>{"event":"test","message":"Hello"}</item><item>{"status":"ok","payload":{}}</item><item>{"timestamp":"${ts}","id":"${uuid}"}</item></string-array>
-  <string-array name="telegram_parse_modes"><item>Markdown</item><item>MarkdownV2</item><item>HTML</item><item>None</item></string-array>
-  <string-array name="email_tls_modes"><item>None</item><item>STARTTLS</item><item>SSL/TLS</item></string-array>
+    <string-array name="parse_modes">
+        <item>Markdown</item>
+        <item>MarkdownV2</item>
+        <item>HTML</item>
+        <item>None</item>
+    </string-array>
+
+    <string-array name="http_methods">
+        <item>GET</item>
+        <item>POST</item>
+        <item>PUT</item>
+        <item>DELETE</item>
+        <item>PATCH</item>
+    </string-array>
+
+    <string-array name="content_types">
+        <item>application/json</item>
+        <item>application/x-www-form-urlencoded</item>
+        <item>text/plain</item>
+    </string-array>
 </resources>
