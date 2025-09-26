@@ -14,9 +14,9 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # 1) Offizielle Action (bevorzugt)
-      - name: Setup Android SDK (official)
-        id: setup_official
+      # Versuch 1: offizielle Action
+      - name: Setup Android SDK (try 1)
+        id: sdk1
         uses: android-actions/setup-android@v3
         with:
           packages: |
@@ -25,16 +25,33 @@ jobs:
             platforms;android-34
         continue-on-error: true
 
-      # 2) Fallback mit Retry nur wenn oben fehlgeschlagen ist
-      - name: Setup Android SDK (fallback with retry)
-        if: steps.setup_official.outcome == 'failure'
-        uses: nick-fields/retry@v3
+      # Versuch 2: offizielle Action erneut, falls 1 scheitert (flaky Fix)
+      - name: Setup Android SDK (try 2)
+        if: steps.sdk1.outcome == 'failure'
+        id: sdk2
+        uses: android-actions/setup-android@v3
         with:
-          timeout_seconds: 300
-          max_attempts: 3
-          command: |
-            yes | sdkmanager --licenses || true
-            sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34"
+          packages: |
+            platform-tools
+            build-tools;34.0.0
+            platforms;android-34
+        continue-on-error: true
+
+      # Fallback: cmdline-tools installieren und dann sdkmanager ausführen (vermeidet Exit 127)
+      - name: Setup Android SDK (manual fallback)
+        if: steps.sdk1.outcome == 'failure' && steps.sdk2.outcome == 'failure'
+        shell: bash
+        run: |
+          set -e
+          export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
+          mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
+          cd "$ANDROID_SDK_ROOT/cmdline-tools"
+          curl -sSL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o cmdtools.zip
+          unzip -q -o cmdtools.zip
+          mv cmdline-tools latest || true
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" "build-tools;34.0.0" "platforms;android-34"
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
