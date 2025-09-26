@@ -23,18 +23,4 @@
     <item>{"title":"$title","text":"$text"}</item>
     <item>{"message":"$text"}</item>
   </string-array>
-
-  <string-array name="http_methods">
-    <item>GET</item>
-    <item>POST</item>
-    <item>PUT</item>
-    <item>DELETE</item>
-    <item>PATCH</item>
-  </string-array>
-
-  <string-array name="content_types">
-    <item>application/json</item>
-    <item>application/x-www-form-urlencoded</item>
-    <item>text/plain</item>
-  </string-array>
 </resources>

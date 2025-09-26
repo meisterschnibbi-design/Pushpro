@@ -35,5 +35,11 @@
                 android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <Spinner
+            android:id="@+id/spinnerTls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:entries="@array/email_tls_modes" />
+
     </LinearLayout>
 </ScrollView>

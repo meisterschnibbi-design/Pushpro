@@ -23,18 +23,6 @@
                 android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <Spinner
-            android:id="@+id/spinnerMethod"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:entries="@array/http_methods" />
-
-        <Spinner
-            android:id="@+id/spinnerContentType"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:entries="@array/content_types" />
-
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -60,6 +48,16 @@
                 android:inputType="textMultiLine"
                 android:minLines="4" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <Spinner
+            android:id="@+id/spinnerMethod"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <Spinner
+            android:id="@+id/spinnerContentType"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
     </LinearLayout>
 </ScrollView>
