@@ -1,0 +1,16 @@
+== Package check (no 'package pro.pushpro') ==
+OK
+
+== R import check (only 'import com.pushpro.R') ==
+OK
+
+== Changed files ==
+app/src/main/java/com/pushpro/app/MainActivity.kt
+app/src/main/java/com/pushpro/app/ui/BaseSettingsActivity.kt
+app/src/main/java/com/pushpro/app/ui/SettingsActivity.kt
+app/src/main/java/com/pushpro/app/ui/DiagnosticsActivity.kt
+app/src/main/java/com/pushpro/app/ui/LogViewerActivity.kt
+app/src/main/java/com/pushpro/app/ui/OfflineQueueActivity.kt
+app/src/main/java/com/pushpro/ui/settings/EmailSettingsActivity.kt
+app/src/main/java/com/pushpro/ui/settings/TelegramSettingsActivity.kt
+app/src/main/java/com/pushpro/ui/settings/WebhookSettingsActivity.kt
