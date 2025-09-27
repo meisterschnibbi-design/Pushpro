@@ -19,20 +19,16 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Root (für Insets, falls du Utils nutzt – optional)
         val root: View? = findViewById(R.id.main_root_view)
 
-        // Buttons aus activity_main.xml
         val btnWebhook: Button   = findViewById(R.id.btnWebhookSettings)
         val btnEmail: Button     = findViewById(R.id.btnEmailSettings)
         val btnTelegram: Button  = findViewById(R.id.btnTelegramSettings)
         val btnSettings: Button  = findViewById(R.id.btnSettings)
 
-        // Status & Switch
         val switchEnable: Switch = findViewById(R.id.switchEnable)
         val txtStatus: TextView  = findViewById(R.id.txtStatus)
 
-        // Global enable laden/speichern
         val prefs = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
         val isEnabled = prefs.getBoolean("global_enabled", false)
         switchEnable.isChecked = isEnabled
@@ -43,7 +39,6 @@ class MainActivity : AppCompatActivity() {
             txtStatus.text = if (checked) getString(R.string.status_enabled) else getString(R.string.status_disabled)
         }
 
-        // Navigation
         btnWebhook.setOnClickListener {
             startActivity(Intent(this, WebhookSettingsActivity::class.java))
         }
