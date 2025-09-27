@@ -1,1 +1,0 @@
-android { namespace = "com.pushpro" }

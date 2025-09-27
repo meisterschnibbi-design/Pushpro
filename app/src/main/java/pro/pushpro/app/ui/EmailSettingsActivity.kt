@@ -1,4 +1,4 @@
-package pro.pushpro.app.ui
+package com.pushpro.app.ui
 
 import android.os.Bundle
 import android.widget.Button
@@ -8,10 +8,9 @@ import android.widget.Spinner
 import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import pro.pushpro.app.R
-import pro.pushpro.app.util.applyStatusBarInset
-import pro.pushpro.app.util.setSystemBars
-import pro.pushpro.app.util.LogUtil
+import com.pushpro.R
+import com.pushpro.app.util.applyStatusBarInset
+import com.pushpro.app.util.setSystemBars
 
 class EmailSettingsActivity : AppCompatActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,11 +67,11 @@ class EmailSettingsActivity : AppCompatActivity() {
         .putString("email_input_whitelist", whitelist.text.toString())
         .putString("email_input_contains", contains.text.toString())
         .apply()
-      
-finish()
+
+      finish()
     }
 
-    // Send Test button: simple validation mock (fields present -> success)
+    // Send Test button
     findViewById<Button>(R.id.btnSendTestEmail).setOnClickListener {
       val hostStr = findViewById<EditText>(R.id.inputHost).text.toString().trim()
       val portStr = findViewById<EditText>(R.id.inputPort).text.toString().trim()

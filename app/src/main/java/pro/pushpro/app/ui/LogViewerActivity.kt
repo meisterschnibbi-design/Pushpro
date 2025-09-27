@@ -1,4 +1,4 @@
-package pro.pushpro.app.ui
+package com.pushpro.app.ui
 
 import android.content.Intent
 import android.os.Bundle
@@ -6,14 +6,11 @@ import android.widget.Button
 import android.widget.CompoundButton
 import android.widget.Switch
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.core.content.ContextCompat
-import com.google.android.material.appbar.MaterialToolbar
-import pro.pushpro.app.R
-import pro.pushpro.app.util.setSystemBars
+import com.pushpro.R
+import com.pushpro.app.util.setSystemBars
 
 class LogViewerActivity : AppCompatActivity() {
 
@@ -22,11 +19,11 @@ class LogViewerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_log_viewer)
 
         // Keep bars black, but DON'T add extra top padding (no double black bar)
-        setSystemBars(this, ContextCompat.getColor(this, R.color.black), ContextCompat.getColor(this, R.color.black))
+        setSystemBars(this,
+            ContextCompat.getColor(this, R.color.black),
+            ContextCompat.getColor(this, R.color.black)
+        )
 
-        
-                                        
-                // Apply bottom inset so nav bar doesn't cover buttons
         val sw: Switch = findViewById(R.id.switchLogsEnabled)
         val recycler: RecyclerView = findViewById(R.id.recyclerLogs)
         val btnClear: Button = findViewById(R.id.btnClear)
@@ -86,7 +83,8 @@ class LogsAdapter(private var data: MutableList<String>) : RecyclerView.Adapter<
         notifyDataSetChanged()
     }
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): LogRowVH {
-        val v = android.view.LayoutInflater.from(parent.context).inflate(R.layout.row_log_item, parent, false)
+        val v = android.view.LayoutInflater.from(parent.context)
+            .inflate(R.layout.row_log_item, parent, false)
         return LogRowVH(v as android.widget.TextView)
     }
     override fun onBindViewHolder(holder: LogRowVH, position: Int) {
@@ -96,5 +94,8 @@ class LogsAdapter(private var data: MutableList<String>) : RecyclerView.Adapter<
 }
 
 class LogRowVH(private val tv: android.widget.TextView) : RecyclerView.ViewHolder(tv) {
-    fun bind(text: String) { tv.text = text; tv.setTextIsSelectable(true) }
+    fun bind(text: String) {
+        tv.text = text
+        tv.setTextIsSelectable(true)
+    }
 }

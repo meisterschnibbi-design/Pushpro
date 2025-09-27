@@ -1,4 +1,4 @@
-package pro.pushpro.app.ui
+package com.pushpro.app.ui
 
 import android.os.Bundle
 import android.widget.Button
@@ -6,8 +6,8 @@ import android.widget.Switch
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import pro.pushpro.app.R
-import pro.pushpro.app.util.LogUtil
+import com.pushpro.R
+import com.pushpro.app.util.LogUtil
 
 class OfflineQueueActivity : AppCompatActivity() {
 
@@ -29,7 +29,10 @@ class OfflineQueueActivity : AppCompatActivity() {
 
         fun loadQueue(): MutableList<String> {
             val joined = prefs.getString("queue", "") ?: ""
-            val items = joined.replace("\r\n","\n").split("\n").filter { it.isNotBlank() }.toMutableList()
+            val items = joined.replace("\r\n","\n")
+                .split("\n")
+                .filter { it.isNotBlank() }
+                .toMutableList()
             if (items.isEmpty()) items.add("Queue empty")
             return items
         }
@@ -43,15 +46,19 @@ class OfflineQueueActivity : AppCompatActivity() {
         // Manual-only: no auto-resend here
         btnResend.setOnClickListener {
             // Decide which channels are enabled
-            val webhookEnabled = prefs.getBoolean("webhook_enabled", false)
-            val emailEnabled   = prefs.getBoolean("email_enabled", false) || prefs.getBoolean("email_input_enabled", false)
-            val telegramEnabled= prefs.getBoolean("telegram_enabled", false)
+            val webhookEnabled  = prefs.getBoolean("webhook_enabled", false)
+            val emailEnabled    = prefs.getBoolean("email_enabled", false) || prefs.getBoolean("email_input_enabled", false)
+            val telegramEnabled = prefs.getBoolean("telegram_enabled", false)
 
             val q = loadQueue()
-            LogUtil.append(this, "Resend requested: queue=${q.size}, channels: " +
-                (listOfNotNull(if (webhookEnabled) "webhook" else null,
-                               if (emailEnabled) "email" else null,
-                               if (telegramEnabled) "telegram" else null).joinToString(",")))
+            LogUtil.append(
+                this,
+                "Resend requested: queue=${q.size}, channels: " + listOfNotNull(
+                    if (webhookEnabled) "webhook" else null,
+                    if (emailEnabled) "email" else null,
+                    if (telegramEnabled) "telegram" else null
+                ).joinToString(",")
+            )
 
             // Here you'd iterate q and call existing senders based on entry.channel.
             // We keep UI-only per request.
@@ -68,12 +75,14 @@ class OfflineQueueActivity : AppCompatActivity() {
 class QueueAdapter(private var data: MutableList<String>) : RecyclerView.Adapter<QueueVH>() {
     fun submit(items: MutableList<String>) { data = items; notifyDataSetChanged() }
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): QueueVH {
-        val v = android.view.LayoutInflater.from(parent.context).inflate(R.layout.row_queue_item, parent, false)
+        val v = android.view.LayoutInflater.from(parent.context)
+            .inflate(R.layout.row_queue_item, parent, false)
         return QueueVH(v as android.widget.TextView)
     }
     override fun onBindViewHolder(holder: QueueVH, position: Int) { holder.bind(data[position]) }
     override fun getItemCount(): Int = data.size
 }
+
 class QueueVH(private val tv: android.widget.TextView) : RecyclerView.ViewHolder(tv) {
     fun bind(text: String) { tv.text = text }
 }
