@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+  <!-- bereits vorhandene Arrays -->
   <string-array name="email_tls_modes">
     <item>SSL</item>
     <item>TLS</item>
@@ -20,10 +21,26 @@
     <item>Accept: application/json</item>
   </string-array>
 
-  <!-- JSON im XML: KEINE rohen &-Zeichen! & als &amp; escapen -->
+  <!-- JSON im XML: &amp; und &quot; korrekt escapen -->
   <string-array name="json_body_templates">
     <item>{&quot;title&quot;:&quot;$title&quot;,&quot;text&quot;:&quot;$text&quot;}</item>
     <item>{&quot;message&quot;:&quot;$text&quot;}</item>
+  </string-array>
+
+  <!-- NEU: von activity_webhook_settings.xml erwartete Arrays -->
+  <string-array name="http_methods">
+    <item>GET</item>
+    <item>POST</item>
+    <item>PUT</item>
+    <item>DELETE</item>
+    <item>PATCH</item>
+  </string-array>
+
+  <string-array name="content_types">
+    <item>application/json</item>
+    <item>application/x-www-form-urlencoded</item>
+    <item>text/plain</item>
+    <item>application/xml</item>
   </string-array>
 
 </resources>
