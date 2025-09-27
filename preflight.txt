@@ -1,16 +1,27 @@
-== Package check (no 'package pro.pushpro') ==
+== Package check ==
 OK
 
-== R import check (only 'import com.pushpro.R') ==
+== R import check ==
 OK
+
+== arrays.xml ==
+OK (present & required arrays included)
+
+== Namespace ==
+app/build.gradle.kts: android { namespace = "com.pushpro" }
+app/build.gradle: android { namespace 'com.pushpro' }
 
 == Changed files ==
+app/build.gradle
+app/build.gradle.kts
 app/src/main/java/com/pushpro/app/MainActivity.kt
 app/src/main/java/com/pushpro/app/ui/BaseSettingsActivity.kt
-app/src/main/java/com/pushpro/app/ui/SettingsActivity.kt
 app/src/main/java/com/pushpro/app/ui/DiagnosticsActivity.kt
 app/src/main/java/com/pushpro/app/ui/LogViewerActivity.kt
 app/src/main/java/com/pushpro/app/ui/OfflineQueueActivity.kt
+app/src/main/java/com/pushpro/app/ui/SettingsActivity.kt
 app/src/main/java/com/pushpro/ui/settings/EmailSettingsActivity.kt
 app/src/main/java/com/pushpro/ui/settings/TelegramSettingsActivity.kt
 app/src/main/java/com/pushpro/ui/settings/WebhookSettingsActivity.kt
+app/src/main/res/values/arrays.xml
+gradle.properties
