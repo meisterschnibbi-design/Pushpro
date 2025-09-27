@@ -6,15 +6,28 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # Versuch 1: offizielle Action
+      # (Optional) Gradle Cache für schnellere Builds
+      - name: Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # Versuch 1: Offizielle Action
       - name: Setup Android SDK (try 1)
         id: sdk1
         uses: android-actions/setup-android@v3
@@ -25,7 +38,7 @@ jobs:
             platforms;android-34
         continue-on-error: true
 
-      # Versuch 2: offizielle Action erneut, falls 1 scheitert (flaky Fix)
+      # Versuch 2 (flaky Fix)
       - name: Setup Android SDK (try 2)
         if: steps.sdk1.outcome == 'failure'
         id: sdk2
@@ -37,7 +50,7 @@ jobs:
             platforms;android-34
         continue-on-error: true
 
-      # Fallback: cmdline-tools installieren und dann sdkmanager ausführen (vermeidet Exit 127)
+      # Fallback: manuell
       - name: Setup Android SDK (manual fallback)
         if: steps.sdk1.outcome == 'failure' && steps.sdk2.outcome == 'failure'
         shell: bash
@@ -56,5 +69,31 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Assemble Release
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+      # Build Debug APK
+      - name: Assemble Debug
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      # Build Release APK & AAB (unsiged, wenn keine Signier-Konfig)
+      - name: Assemble Release (APK) & Bundle Release (AAB)
+        run: ./gradlew assembleRelease bundleRelease --no-daemon --stacktrace
+
+      # Artefakte hochladen
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - name: Upload Release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab
+          path: app/build/outputs/bundle/release/app-release.aab
