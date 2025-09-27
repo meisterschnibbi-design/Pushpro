@@ -1,92 +1,85 @@
-package pro.pushpro.app.ui
+package com.pushpro.app.ui
 
-import android.content.Intent
 import android.os.Bundle
-import android.provider.Settings
-import android.widget.Toast
+import android.widget.Button
+import android.widget.Switch
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
-import com.google.android.material.button.MaterialButton
-import pro.pushpro.app.R
-import pro.pushpro.app.ui.LogViewerActivity
-import pro.pushpro.app.ui.OfflineQueueActivity
-import pro.pushpro.app.util.LogUtil
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.pushpro.R
+import com.pushpro.app.util.LogUtil
 
-class SettingsActivity : AppCompatActivity() {
+class OfflineQueueActivity : AppCompatActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_settings_menu)
+        setContentView(R.layout.activity_offline_queue)
 
-        // Wire menu actions
-        findViewById<MaterialButton>(R.id.btnOpenAccess).setOnClickListener {
-            try {
-                val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                    putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
-                }
-                startActivity(intent)
-            } catch (_: Exception) {
-                startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-            }
-        }
-        findViewById<MaterialButton>(R.id.btnBatterySettings).setOnClickListener {
-            startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-        }
-        findViewById<MaterialButton>(R.id.btnLogViewer).setOnClickListener {
-            startActivity(Intent(this, LogViewerActivity::class.java))
-        }
-        findViewById<MaterialButton>(R.id.btnOfflineQueue).setOnClickListener {
-            startActivity(Intent(this, OfflineQueueActivity::class.java))
+        val btnResend: Button = findViewById(R.id.btnResendAll)
+        val btnClear: Button = findViewById(R.id.btnClearQueue)
+        val swEnable: Switch = findViewById(R.id.switchQueueEnabled)
+        val list: RecyclerView = findViewById(R.id.recyclerQueue)
+
+        list.layoutManager = LinearLayoutManager(this)
+        val adapter = QueueAdapter(mutableListOf())
+        list.adapter = adapter
+
+        val prefs = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
+        swEnable.isChecked = prefs.getBoolean("queue_enabled", false)
+
+        fun loadQueue(): MutableList<String> {
+            val joined = prefs.getString("queue", "") ?: ""
+            val items = joined.replace("\r\n", "\n")
+                .split("\n")
+                .filter { it.isNotBlank() }
+                .toMutableList()
+            if (items.isEmpty()) items.add("Queue empty")
+            return items
         }
 
-        findViewById<MaterialButton>(R.id.btnDiagnostics).setOnClickListener {
-            val p = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
-            val checks = listOf(
-                "global_enabled=" + p.getBoolean("global_enabled", false),
-                "webhook_enabled=" + p.getBoolean("webhook_enabled", false),
-                "email_enabled=" + (p.getBoolean("email_enabled", false) || p.getBoolean("email_input_enabled", false)),
-                "telegram_enabled=" + p.getBoolean("telegram_enabled", false),
-                "queue_enabled=" + p.getBoolean("queue_enabled", false)
+        adapter.submit(loadQueue())
+
+        swEnable.setOnCheckedChangeListener { _, checked ->
+            prefs.edit().putBoolean("queue_enabled", checked).apply()
+        }
+
+        btnResend.setOnClickListener {
+            val webhookEnabled  = prefs.getBoolean("webhook_enabled", false)
+            val emailEnabled    = prefs.getBoolean("email_enabled", false) || prefs.getBoolean("email_input_enabled", false)
+            val telegramEnabled = prefs.getBoolean("telegram_enabled", false)
+
+            val q = loadQueue()
+            LogUtil.append(
+                this,
+                "Resend requested: queue=${q.size}, channels: " + listOfNotNull(
+                    if (webhookEnabled) "webhook" else null,
+                    if (emailEnabled) "email" else null,
+                    if (telegramEnabled) "telegram" else null
+                ).joinToString(",")
             )
-            LogUtil.append(this, "Diagnostics: " + checks.joinToString(", "))
-            Toast.makeText(this, "Diagnostics written to logs", Toast.LENGTH_SHORT).show()
-        }
-        findViewById<MaterialButton>(R.id.btnResetSettings).setOnClickListener {
-            val p = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
-            p.edit().clear().apply()
-            LogUtil.append(this, "Settings reset to defaults")
-            Toast.makeText(this, "Settings reset", Toast.LENGTH_SHORT).show()
-        }
-        findViewById<MaterialButton>(R.id.btnExportConfig).setOnClickListener {
-            val p = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
-            val all = p.all
-            val sb = StringBuilder().append("{\n")
-            val it = all.entries.iterator()
-            while (it.hasNext()) {
-                val e = it.next()
-                sb.append("  \"").append(e.key).append("\": \"").append((e.value)?.toString() ?: "").append("\"")
-                if (it.hasNext()) sb.append(",")
-                sb.append("\n")
-            }
-            sb.append("}")
-            val share = Intent(Intent.ACTION_SEND).apply {
-                type = "application/json"
-                putExtra(Intent.EXTRA_SUBJECT, "PushPro Config")
-                putExtra(Intent.EXTRA_TEXT, sb.toString())
-            }
-            startActivity(Intent.createChooser(share, "Export config"))
+
+            // TODO: Hier würden die Einträge tatsächlich gesendet werden
         }
 
-        // Style buttons (black/white / rounded)
-        val ids = intArrayOf(R.id.btnOpenAccess, R.id.btnBatterySettings, R.id.btnLogViewer, R.id.btnOfflineQueue, R.id.btnDiagnostics, R.id.btnResetSettings, R.id.btnExportConfig)
-        for (id in ids) stylePrimary(findViewById(id))
+        btnClear.setOnClickListener {
+            prefs.edit().remove("queue").apply()
+            adapter.submit(loadQueue())
+            LogUtil.append(this, "Queue cleared by user")
+        }
     }
+}
 
-    private fun stylePrimary(btn: MaterialButton) {
-        btn.isEnabled = true
-        btn.cornerRadius = (16 * resources.displayMetrics.density).toInt()
-        btn.backgroundTintList = android.content.res.ColorStateList.valueOf(ContextCompat.getColor(this, R.color.black))
-        btn.setTextColor(android.graphics.Color.WHITE)
-        btn.insetTop = 0; btn.insetBottom = 0
-        btn.strokeWidth = 0
+class QueueAdapter(private var data: MutableList<String>) : RecyclerView.Adapter<QueueVH>() {
+    fun submit(items: MutableList<String>) { data = items; notifyDataSetChanged() }
+    override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): QueueVH {
+        val v = android.view.LayoutInflater.from(parent.context)
+            .inflate(R.layout.row_queue_item, parent, false)
+        return QueueVH(v as android.widget.TextView)
     }
+    override fun onBindViewHolder(holder: QueueVH, position: Int) { holder.bind(data[position]) }
+    override fun getItemCount(): Int = data.size
+}
+
+class QueueVH(private val tv: android.widget.TextView) : RecyclerView.ViewHolder(tv) {
+    fun bind(text: String) { tv.text = text }
 }

@@ -22,43 +22,39 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // StatusBar / Insets
-        val rootView: ImageView = findViewById(R.id.main_root_view)
-        rootView.applyStatusBarInset()
-        setSystemBars(window, ContextCompat.getColor(this, R.color.black))
+        // Status bar styling (keine doppelte Top-Inset)
+        findViewById<ImageView?>(R.id.main_root_view)?.applyStatusBarInset()
+        setSystemBars(
+            window,
+            ContextCompat.getColor(this, R.color.black)
+        )
 
-        // Beispiel-Buttons (IDs musst du mit deinem XML abgleichen!)
-        val btnEmail: Button = findViewById(R.id.btnEmailSettings)
-        val btnTelegram: Button = findViewById(R.id.btnTelegramSettings)
-        val btnWebhook: Button = findViewById(R.id.btnWebhookSettings)
-        val btnSettings: Button = findViewById(R.id.btnSettings)
-
-        btnEmail.setOnClickListener {
+        // Navigation-Buttons
+        findViewById<Button?>(R.id.btnEmailSettings)?.setOnClickListener {
             startActivity(Intent(this, EmailSettingsActivity::class.java))
         }
-
-        btnTelegram.setOnClickListener {
+        findViewById<Button?>(R.id.btnTelegramSettings)?.setOnClickListener {
             startActivity(Intent(this, TelegramSettingsActivity::class.java))
         }
-
-        btnWebhook.setOnClickListener {
+        findViewById<Button?>(R.id.btnWebhookSettings)?.setOnClickListener {
             startActivity(Intent(this, WebhookSettingsActivity::class.java))
         }
-
-        btnSettings.setOnClickListener {
+        findViewById<Button?>(R.id.btnSettings)?.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
-        // Beispiel-Switch oder TextView (falls vorhanden)
-        val switchEnable: Switch = findViewById(R.id.switchEnable)
-        val txtStatus: TextView = findViewById(R.id.txtStatus)
+        // Global Enable Switch (passt zu Diagnostics/Settings)
+        val prefs = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
+        val switchEnable: Switch? = findViewById(R.id.switchEnable)
+        val txtStatus: TextView? = findViewById(R.id.txtStatus)
 
-        switchEnable.setOnCheckedChangeListener { _, isChecked ->
-            txtStatus.text = if (isChecked) {
-                getString(R.string.enabled)
-            } else {
-                getString(R.string.disabled)
-            }
+        val enabledInit = prefs.getBoolean("global_enabled", false)
+        switchEnable?.isChecked = enabledInit
+        txtStatus?.text = if (enabledInit) getString(R.string.enabled) else getString(R.string.disabled)
+
+        switchEnable?.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("global_enabled", isChecked).apply()
+            txtStatus?.text = if (isChecked) getString(R.string.enabled) else getString(R.string.disabled)
         }
     }
 }

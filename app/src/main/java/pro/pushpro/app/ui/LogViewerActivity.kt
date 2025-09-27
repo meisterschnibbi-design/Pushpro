@@ -18,8 +18,9 @@ class LogViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_log_viewer)
 
-        // Keep bars black, but DON'T add extra top padding (no double black bar)
-        setSystemBars(this,
+        // Bars schwarz, ohne zusätzliches Top-Inset
+        setSystemBars(
+            this,
             ContextCompat.getColor(this, R.color.black),
             ContextCompat.getColor(this, R.color.black)
         )
