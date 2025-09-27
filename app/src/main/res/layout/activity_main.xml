@@ -8,16 +8,15 @@
     android:fillViewport="true">
 
     <LinearLayout
-        android:id="@+id/rootMain"
+        android:id="@+id/main_root_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp"
         android:paddingBottom="24dp">
 
-        <!-- App header: icon + name -->
+        <!-- App header -->
         <LinearLayout
-            android:id="@+id/appHeader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
@@ -39,9 +38,7 @@
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:layout_marginStart="12dp" />
-        
-    </LinearLayout>
-
+        </LinearLayout>
 
         <!-- Global switch row -->
         <LinearLayout
@@ -58,16 +55,14 @@
                 android:text="@string/forwarding_enabled" />
 
             <Switch
-                android:id="@+id/switchGlobal"
+                android:id="@+id/switchEnable"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
-        
-    </LinearLayout>
-
+        </LinearLayout>
 
         <!-- Main buttons -->
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnWebhook"
+            android:id="@+id/btnWebhookSettings"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/btn_webhook"
@@ -75,7 +70,7 @@
             android:background="@drawable/btn_black_solid" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnEmail"
+            android:id="@+id/btnEmailSettings"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -84,7 +79,7 @@
             android:background="@drawable/btn_black_solid" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnTelegram"
+            android:id="@+id/btnTelegramSettings"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -122,11 +117,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/status_disabled"
                 android:paddingStart="8dp" />
-        
+        </LinearLayout>
+
     </LinearLayout>
-
-
-    
-    </LinearLayout>
-
 </ScrollView>
