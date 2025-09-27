@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
   <string-array name="email_tls_modes">
     <item>SSL</item>
     <item>TLS</item>
@@ -19,8 +20,10 @@
     <item>Accept: application/json</item>
   </string-array>
 
+  <!-- JSON im XML: KEINE rohen &-Zeichen! & als &amp; escapen -->
   <string-array name="json_body_templates">
-    <item>{'title':'$title','text':'$text'}</item>
-    <item>{'message':'$text'}</item>
+    <item>{&quot;title&quot;:&quot;$title&quot;,&quot;text&quot;:&quot;$text&quot;}</item>
+    <item>{&quot;message&quot;:&quot;$text&quot;}</item>
   </string-array>
+
 </resources>
