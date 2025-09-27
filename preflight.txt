@@ -1,27 +1,91 @@
-== Package check ==
-OK
-
-== R import check ==
-OK
-
-== arrays.xml ==
-OK (present & required arrays included)
-
-== Namespace ==
-app/build.gradle.kts: android { namespace = "com.pushpro" }
-app/build.gradle: android { namespace 'com.pushpro' }
-
-== Changed files ==
-app/build.gradle
+== File listing ==
+.github/
+app/
 app/build.gradle.kts
+app/src/
+app/src/main/
+app/src/main/java/
+app/src/main/java/com/
+app/src/main/java/com/pushpro/
+app/src/main/java/com/pushpro/app/
 app/src/main/java/com/pushpro/app/MainActivity.kt
+app/src/main/java/com/pushpro/app/ui/
 app/src/main/java/com/pushpro/app/ui/BaseSettingsActivity.kt
 app/src/main/java/com/pushpro/app/ui/DiagnosticsActivity.kt
 app/src/main/java/com/pushpro/app/ui/LogViewerActivity.kt
 app/src/main/java/com/pushpro/app/ui/OfflineQueueActivity.kt
 app/src/main/java/com/pushpro/app/ui/SettingsActivity.kt
+app/src/main/java/com/pushpro/ui/
+app/src/main/java/com/pushpro/ui/settings/
 app/src/main/java/com/pushpro/ui/settings/EmailSettingsActivity.kt
 app/src/main/java/com/pushpro/ui/settings/TelegramSettingsActivity.kt
 app/src/main/java/com/pushpro/ui/settings/WebhookSettingsActivity.kt
+app/src/main/res/
+app/src/main/res/values/
 app/src/main/res/values/arrays.xml
 gradle.properties
+gradle/
+src/
+
+== Checks ==
+No pro/pushpro paths: OK
+Single Gradle DSL: OK (kts)
+Namespace entry: android { namespace = "com.pushpro" }
+
+== Kotlin heads (package + optional import) ==
+[app/src/main/java/com/pushpro/app/MainActivity.kt]
+package com.pushpro.app
+
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+
+[app/src/main/java/com/pushpro/app/ui/BaseSettingsActivity.kt]
+package com.pushpro.app.ui
+
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+
+[app/src/main/java/com/pushpro/app/ui/SettingsActivity.kt]
+package com.pushpro.app.ui
+
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+
+[app/src/main/java/com/pushpro/app/ui/DiagnosticsActivity.kt]
+package com.pushpro.app.ui
+
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+
+[app/src/main/java/com/pushpro/app/ui/LogViewerActivity.kt]
+package com.pushpro.app.ui
+
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+
+[app/src/main/java/com/pushpro/app/ui/OfflineQueueActivity.kt]
+package com.pushpro.app.ui
+
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+
+[app/src/main/java/com/pushpro/ui/settings/EmailSettingsActivity.kt]
+package com.pushpro.ui.settings
+
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import com.pushpro.R
+[app/src/main/java/com/pushpro/ui/settings/TelegramSettingsActivity.kt]
+package com.pushpro.ui.settings
+
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import com.pushpro.R
+[app/src/main/java/com/pushpro/ui/settings/WebhookSettingsActivity.kt]
+package com.pushpro.ui.settings
+
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import com.pushpro.R
+arrays.xml contains required arrays: OK; header: OK
+AndroidX flags in gradle.properties: OK
