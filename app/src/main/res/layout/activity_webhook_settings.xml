@@ -53,6 +53,13 @@
             android:layout_height="wrap_content"
             android:hint="@string/channel_whitelist_hint" />
 
+        <TextView
+            android:id="@+id/txtTemplatePreview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="8dp"
+            android:text="Preview" />
+
         <Button
             android:id="@+id/btnSave"
             android:layout_width="match_parent"
