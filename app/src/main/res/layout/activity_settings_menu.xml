@@ -30,19 +30,19 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="@string/telegram_message_template" />
+        android:text="Diagnostics" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnResetSettings"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="@string/clear_logs" />
+        android:text="Reset settings" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnExportConfig"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="@string/btn_settings" />
+        android:text="Export config" />
 </LinearLayout>

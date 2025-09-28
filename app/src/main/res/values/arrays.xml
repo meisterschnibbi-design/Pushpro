@@ -1,17 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string-array name="telegram_parse_modes">
         <item>None</item>
         <item>Markdown</item>
         <item>HTML</item>
     </string-array>
-
     <string-array name="webhook_methods">
         <item>GET</item>
         <item>POST</item>
         <item>PUT</item>
         <item>PATCH</item>
     </string-array>
-
     <string-array name="webhook_templates">
         <item>json</item>
         <item>form</item>

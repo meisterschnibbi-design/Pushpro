@@ -1,3 +1,4 @@
+
 package com.pushpro.app.ui
 
 import android.os.Bundle
@@ -8,6 +9,7 @@ import android.widget.Spinner
 import android.widget.Switch
 import androidx.appcompat.app.AppCompatActivity
 import com.pushpro.R
+import com.pushpro.app.net.Sender
 
 class WebhookSettingsActivity : AppCompatActivity() {
 
@@ -56,15 +58,13 @@ class WebhookSettingsActivity : AppCompatActivity() {
         }
 
         btnTest.setOnClickListener {
-            val urlOk = inputUrl.text.toString().trim().startsWith("http")
-            getSharedPreferences("pushpro_prefs", MODE_PRIVATE).edit()
-                .putBoolean("last_send_error_webhook", !urlOk)
-                .apply()
-            android.widget.Toast.makeText(
+            Sender.sendWebhookTest(
                 this,
-                if (urlOk) "Webhook test OK" else "Webhook test failed",
-                android.widget.Toast.LENGTH_SHORT
-            ).show()
+                inputUrl.text.toString().trim(),
+                spinnerMethod.selectedItemPosition,
+                spinnerTemplate.selectedItemPosition,
+                inputHeaders.text.toString()
+            )
         }
     }
 }

@@ -1,3 +1,4 @@
+
 package com.pushpro.app.ui
 
 import android.os.Bundle
@@ -9,6 +10,7 @@ import android.widget.Spinner
 import android.widget.Switch
 import androidx.appcompat.app.AppCompatActivity
 import com.pushpro.R
+import com.pushpro.app.net.Sender
 
 class TelegramSettingsActivity : AppCompatActivity() {
 
@@ -62,11 +64,17 @@ class TelegramSettingsActivity : AppCompatActivity() {
         }
 
         btnSendTest?.setOnClickListener {
-            val ok = inputBotToken.text.isNotBlank() && inputChatId.text.isNotBlank()
-            getSharedPreferences("pushpro_prefs", MODE_PRIVATE).edit()
-                .putBoolean("last_send_error_tg", !ok)
-                .apply()
-            android.widget.Toast.makeText(this, if (ok) "Telegram test OK" else "Telegram test failed", android.widget.Toast.LENGTH_SHORT).show()
+            // real send
+            Sender.sendTelegramTest(
+                this,
+                inputBotToken.text.toString().trim(),
+                inputChatId.text.toString().trim(),
+                spinnerParseMode.selectedItemPosition,
+                inputHeaderPrefix.text.toString(),
+                chkDisablePreview.isChecked,
+                chkSilent.isChecked,
+                chkProtect.isChecked
+            )
         }
     }
 }

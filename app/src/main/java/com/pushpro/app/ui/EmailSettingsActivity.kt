@@ -1,3 +1,4 @@
+
 package com.pushpro.app.ui
 
 import android.os.Bundle
@@ -8,6 +9,7 @@ import android.widget.Spinner
 import android.widget.Switch
 import androidx.appcompat.app.AppCompatActivity
 import com.pushpro.R
+import com.pushpro.app.net.Sender
 
 class EmailSettingsActivity : AppCompatActivity() {
 
@@ -66,20 +68,15 @@ class EmailSettingsActivity : AppCompatActivity() {
                 .putString("email_input_contains", inputContains.text.toString())
                 .apply()
             finish()
-        }
+        })
 
         btnSendTest.setOnClickListener {
-            val ok = inputHost.text.isNotBlank() &&
-                     inputPort.text.isNotBlank() &&
-                     inputRecipient.text.isNotBlank()
+            // Placeholder: only sets flag. Implement real SMTP later if desired.
+            val ok = inputHost.text.isNotBlank() && inputPort.text.isNotBlank() && inputRecipient.text.isNotBlank()
             getSharedPreferences("pushpro_prefs", MODE_PRIVATE).edit()
                 .putBoolean("last_send_error_email", !ok)
                 .apply()
-            android.widget.Toast.makeText(
-                this,
-                if (ok) "Email test OK" else "Email test failed",
-                android.widget.Toast.LENGTH_SHORT
-            ).show()
+            android.widget.Toast.makeText(this, if (ok) "Email test OK" else "Email test failed", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 }
