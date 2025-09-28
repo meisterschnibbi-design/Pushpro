@@ -1,1 +1,57 @@
-<!-- Email layout hotfix -->
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/rootEmail"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:importantForAutofill="noExcludeDescendants">
+
+        <Switch
+            android:id="@+id/switchEnabled"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/enabled" />
+
+        <EditText android:id="@+id/inputHost" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/smtp_host"/>
+        <EditText android:id="@+id/inputPort" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/smtp_port" android:inputType="number"/>
+
+        <EditText
+            android:id="@+id/inputUser"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/smtp_username"
+            android:importantForAutofill="no"
+            android:autofillHints="" />
+
+        <EditText
+            android:id="@+id/inputPass"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/smtp_password"
+            android:inputType="textPassword"
+            android:importantForAutofill="no"
+            android:autofillHints="" />
+
+        <Spinner android:id="@+id/spinnerTls" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+        <EditText
+            android:id="@+id/inputRecipient"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/email_recipient"
+            android:importantForAutofill="no"
+            android:autofillHints="" />
+
+        <EditText android:id="@+id/inputSubjectPrefix" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/subject_prefix"/>
+        <EditText android:id="@+id/inputWhitelist" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/channel_whitelist_hint"/>
+        <EditText android:id="@+id/inputContains" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/contains_filter"/>
+
+        <Button android:id="@+id/btnSave" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/save"/>
+        <Button android:id="@+id/btnSendTestEmail" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/send_test"/>
+    </LinearLayout>
+</ScrollView>
