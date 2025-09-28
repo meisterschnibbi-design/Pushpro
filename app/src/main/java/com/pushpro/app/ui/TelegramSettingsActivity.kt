@@ -1,18 +1,14 @@
-
 package com.pushpro.app.ui
 
 import android.os.Bundle
-import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.EditText
-import android.widget.Spinner
-import android.widget.Switch
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.pushpro.R
 import com.pushpro.app.net.Sender
 
 class TelegramSettingsActivity : AppCompatActivity() {
+
+    private fun tgDefaultTemplate() = "{title}\n{text}\n{package}\n{time}"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,15 +25,15 @@ class TelegramSettingsActivity : AppCompatActivity() {
         val chkSilent: CheckBox = findViewById(R.id.chkSilent)
         val chkProtect: CheckBox = findViewById(R.id.chkProtect)
         val inputWhitelist: EditText = findViewById(R.id.inputWhitelist)
+        val inputContains: EditText = findViewById(R.id.inputContainsTg)
+        val inputTemplateBody: EditText = findViewById(R.id.inputTemplateBodyTg)
         val btnSave: Button = findViewById(R.id.btnSave)
         val btnSendTest: Button? = findViewById(R.id.btnSendTestTelegram)
 
-        ArrayAdapter.createFromResource(
-            this,
-            R.array.telegram_parse_modes,
-            android.R.layout.simple_spinner_dropdown_item
-        ).also { spinnerParseMode.adapter = it }
+        ArrayAdapter.createFromResource(this, R.array.telegram_parse_modes, android.R.layout.simple_spinner_dropdown_item)
+            .also { spinnerParseMode.adapter = it }
 
+        // Load
         swEnabled.isChecked = prefs.getBoolean("tg_enabled", false)
         inputBotToken.setText(prefs.getString("tg_token", "") ?: "")
         inputChatId.setText(prefs.getString("tg_chat_id", "") ?: "")
@@ -47,6 +43,8 @@ class TelegramSettingsActivity : AppCompatActivity() {
         chkSilent.isChecked = prefs.getBoolean("tg_silent", false)
         chkProtect.isChecked = prefs.getBoolean("tg_protect", false)
         inputWhitelist.setText(prefs.getString("tg_whitelist", "") ?: "")
+        inputContains.setText(prefs.getString("tg_contains", "") ?: "")
+        inputTemplateBody.setText(prefs.getString("tg_tpl", "")?.takeIf { it.isNotBlank() } ?: tgDefaultTemplate())
 
         btnSave.setOnClickListener {
             prefs.edit()
@@ -59,12 +57,16 @@ class TelegramSettingsActivity : AppCompatActivity() {
                 .putBoolean("tg_silent", chkSilent.isChecked)
                 .putBoolean("tg_protect", chkProtect.isChecked)
                 .putString("tg_whitelist", inputWhitelist.text.toString())
+                .putString("tg_contains", inputContains.text.toString())
+                .putString("tg_tpl", inputTemplateBody.text.toString())
                 .apply()
             finish()
         }
 
         btnSendTest?.setOnClickListener {
-            // real send
+            // Persist template before test
+            prefs.edit().putString("tg_tpl", inputTemplateBody.text.toString()).apply()
+
             Sender.sendTelegramTest(
                 this,
                 inputBotToken.text.toString().trim(),

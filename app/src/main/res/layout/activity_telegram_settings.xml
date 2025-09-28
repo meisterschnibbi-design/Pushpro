@@ -25,6 +25,25 @@
 
         <EditText android:id="@+id/inputWhitelist" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/channel_whitelist_hint"/>
 
+        <!-- NEW: contains filter -->
+        <EditText android:id="@+id/inputContainsTg" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/contains_filter"/>
+
+        <!-- NEW: editable template -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Template (use {title},{text},{package},{time})"
+            android:paddingTop="8dp"/>
+
+        <EditText
+            android:id="@+id/inputTemplateBodyTg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minLines="6"
+            android:gravity="top|start"
+            android:fontFamily="monospace"
+            android:inputType="textMultiLine"/>
+
         <Button android:id="@+id/btnSave" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/save"/>
         <Button android:id="@+id/btnSendTestTelegram" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/send_test"/>
     </LinearLayout>

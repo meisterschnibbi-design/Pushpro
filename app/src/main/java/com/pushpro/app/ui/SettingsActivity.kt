@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import com.google.android.material.button.MaterialButton
 import com.pushpro.R
 import com.pushpro.app.util.LogUtil
@@ -46,11 +45,42 @@ class SettingsActivity : AppCompatActivity() {
             Toast.makeText(this, "Diagnostics written to logs", Toast.LENGTH_SHORT).show()
         }
 
+        // FULL RESET ONLY HERE (no per-screen resets)
         findViewById<MaterialButton>(R.id.btnResetSettings).setOnClickListener {
-            val p = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
-            p.edit().clear().apply()
-            LogUtil.append(this, "Settings reset to defaults")
-            Toast.makeText(this, "Settings reset", Toast.LENGTH_SHORT).show()
+            // 1) Clear both stores
+            getSharedPreferences("pushpro_prefs", MODE_PRIVATE).edit().clear().apply()
+            getSharedPreferences("prefs", MODE_PRIVATE).edit().clear().apply()
+
+            // 2) Restore defaults/templates in prefs
+            val tplJson  = """{ "title": "{title}", "text": "{text}", "package": "{package}", "time": "{time}" }"""
+            val tplForm  = """title={title}&text={text}&package={package}&time={time}"""
+            val tplPlain = "{title}\n{text}\n{package}\n{time}"
+            val tplXml   = """<push><title>{title}</title><text>{text}</text><package>{package}</package><time>{time}</time></push>"""
+            val tgTpl    = "{title}\n{text}\n{package}\n{time}"
+
+            getSharedPreferences("prefs", MODE_PRIVATE).edit()
+                // Webhook defaults
+                .putString("wh_tpl_json",  tplJson)
+                .putString("wh_tpl_form",  tplForm)
+                .putString("wh_tpl_plain", tplPlain)
+                .putString("wh_tpl_xml",   tplXml)
+                .putInt("wh_method", 1)     // POST
+                .putInt("wh_template", 0)   // json
+                .putString("wh_contains", "")
+                .putString("wh_whitelist", "")
+                // Telegram defaults
+                .putString("tg_tpl", tgTpl)
+                .putInt("tg_parse_mode", 0) // None
+                .putString("tg_contains", "")
+                .putString("tg_whitelist", "")
+                // Channel enable flags -> OFF
+                .putBoolean("wh_enabled", false)
+                .putBoolean("tg_enabled", false)
+                .putBoolean("email_enabled", false)
+                .apply()
+
+            LogUtil.append(this, "Settings reset to defaults (templates & modes restored)")
+            Toast.makeText(this, "All settings & templates reset", Toast.LENGTH_SHORT).show()
         }
 
         findViewById<MaterialButton>(R.id.btnExportConfig).setOnClickListener {
