@@ -56,6 +56,13 @@ object Sender {
 
     // Forward real pushes
     fun forward(ctx: Context, title: String, text: String, pkg: String) {
+        // Gate: Hauptschalter global_enabled
+        val pStatus = ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE)
+        if (!pStatus.getBoolean("global_enabled", false)) {
+            // Hauptschalter ist aus -> keine echten Pushes
+            return
+        }
+
         val p = ctx.getSharedPreferences("prefs", Context.MODE_PRIVATE)
 
         // EMAIL: unchanged (handled elsewhere if enabled)

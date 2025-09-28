@@ -38,14 +38,24 @@ class MainActivity : AppCompatActivity() {
         fun updateLamp() {
             val pp = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
             val globalOn = pp.getBoolean("global_enabled", false)
-            val errWebhook = pp.getBoolean("last_send_error_webhook", false)
-            val errTg = pp.getBoolean("last_send_error_tg", false)
-            val anyError = errWebhook || errTg
 
-            val color = when {
-                anyError -> android.graphics.Color.RED
-                !globalOn -> 0xFFFFA000.toInt() // orange
-                else -> 0xFF00C853.toInt()      // green
+            if (!globalOn) {
+                // Hauptschalter aus -> immer rot
+                imgLamp.setColorFilter(android.graphics.Color.RED, android.graphics.PorterDuff.Mode.SRC_IN)
+                return
+            }
+
+            // Prüfe, ob irgendein Kanal aktiviert ist
+            val prefsCfg = getSharedPreferences("prefs", MODE_PRIVATE)
+            val whOn = prefsCfg.getBoolean("wh_enabled", false)
+            val tgOn = prefsCfg.getBoolean("tg_enabled", false)
+            val emailOn = prefsCfg.getBoolean("email_enabled", false)
+            val anyChannel = whOn || tgOn || emailOn
+
+            val color = if (anyChannel) {
+                0xFF00C853.toInt() // grün
+            } else {
+                0xFFFFA000.toInt() // orange
             }
             imgLamp.setColorFilter(color, android.graphics.PorterDuff.Mode.SRC_IN)
         }
