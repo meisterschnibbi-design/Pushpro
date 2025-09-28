@@ -1,4 +1,3 @@
-
 package com.pushpro.app.ui
 
 import android.os.Bundle
@@ -9,7 +8,6 @@ import android.widget.Spinner
 import android.widget.Switch
 import androidx.appcompat.app.AppCompatActivity
 import com.pushpro.R
-import com.pushpro.app.net.Sender
 
 class EmailSettingsActivity : AppCompatActivity() {
 
@@ -32,9 +30,12 @@ class EmailSettingsActivity : AppCompatActivity() {
         val btnSave: Button = findViewById(R.id.btnSave)
         val btnSendTest: Button = findViewById(R.id.btnSendTestEmail)
 
+        // TLS options + Auto-Port
         val tlsItems = arrayOf("None (25)", "STARTTLS (587)", "SSL/TLS (465)")
-        spinnerTls.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, tlsItems)
+        spinnerTls.adapter =
+            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, tlsItems)
 
+        // Load saved values
         swEnabled.isChecked = prefs.getBoolean("email_enabled", false)
         inputHost.setText(prefs.getString("email_input_host", "") ?: "")
         inputPort.setText(prefs.getString("email_input_port", "") ?: "")
@@ -44,16 +45,28 @@ class EmailSettingsActivity : AppCompatActivity() {
         inputSubject.setText(prefs.getString("email_input_subject_prefix", "") ?: "")
         inputWhitelist.setText(prefs.getString("email_input_whitelist", "") ?: "")
         inputContains.setText(prefs.getString("email_input_contains", "") ?: "")
+        spinnerTls.setSelection((prefs.getInt("email_input_tls_mode", 1)).coerceIn(0, 2))
 
-        spinnerTls.setSelection((prefs.getInt("email_input_tls_mode", 1)).coerceIn(0,2))
-        spinnerTls.setOnItemSelectedListener(object: android.widget.AdapterView.OnItemSelectedListener{
-            override fun onItemSelected(parent: android.widget.AdapterView<*>, view: android.view.View?, position: Int, id: Long) {
-                val port = when(position){ 0->"25"; 1->"587"; else->"465" }
+        spinnerTls.setOnItemSelectedListener(object :
+            android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: android.widget.AdapterView<*>,
+                view: android.view.View?,
+                position: Int,
+                id: Long
+            ) {
+                val port = when (position) {
+                    0 -> "25"   // None
+                    1 -> "587"  // STARTTLS
+                    else -> "465" // SSL/TLS
+                }
                 inputPort.setText(port)
             }
+
             override fun onNothingSelected(parent: android.widget.AdapterView<*>) {}
         })
 
+        // Save
         btnSave.setOnClickListener {
             prefs.edit()
                 .putBoolean("email_enabled", swEnabled.isChecked)
@@ -68,15 +81,22 @@ class EmailSettingsActivity : AppCompatActivity() {
                 .putString("email_input_contains", inputContains.text.toString())
                 .apply()
             finish()
-        })
+        }
 
+        // Local test flag (SMTP real send optional)
         btnSendTest.setOnClickListener {
-            // Placeholder: only sets flag. Implement real SMTP later if desired.
-            val ok = inputHost.text.isNotBlank() && inputPort.text.isNotBlank() && inputRecipient.text.isNotBlank()
-            getSharedPreferences("pushpro_prefs", MODE_PRIVATE).edit()
+            val ok = inputHost.text.isNotBlank() &&
+                     inputPort.text.isNotBlank() &&
+                     inputRecipient.text.isNotBlank()
+            getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
+                .edit()
                 .putBoolean("last_send_error_email", !ok)
                 .apply()
-            android.widget.Toast.makeText(this, if (ok) "Email test OK" else "Email test failed", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(
+                this,
+                if (ok) "Email test OK" else "Email test failed",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
         }
     }
 }
