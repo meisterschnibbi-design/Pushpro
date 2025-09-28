@@ -65,7 +65,26 @@ object Sender {
 
         val p = ctx.getSharedPreferences("prefs", Context.MODE_PRIVATE)
 
-        // EMAIL: unchanged (handled elsewhere if enabled)
+        // EMAIL: echte Weiterleitung (Test bleibt separat)
+        if (p.getBoolean("email_enabled", false) &&
+            allowByWhitelist(p.getString("email_input_whitelist", ""), title, text, pkg) &&
+            matchContains(p.getString("email_input_contains", ""), title, text, pkg)
+        ) {
+            val host   = p.getString("email_input_host", "") ?: ""
+            val port   = p.getString("email_input_port", "") ?: ""
+            val user   = p.getString("email_input_user", "") ?: ""
+            val pass   = p.getString("email_input_pass", "") ?: ""
+            val tls    = p.getInt("email_input_tls_mode", 1) // 0=None, 1=STARTTLS, 2=SSL/TLS
+            val to     = p.getString("email_input_recipient", "") ?: ""
+            val prefix = p.getString("email_input_subject_prefix", "") ?: ""
+            val subject = (if (prefix.isNotBlank()) "$prefix " else "") + title
+            val body = buildString {
+                append(text).append('\n')
+                append(pkg).append('\n')
+                append(sdf.format(Date()))
+            }
+            thread { EmailSender.sendEmail(ctx, host, port, user, pass, tls, to, subject, body) }
+        }
 
         // WEBHOOK: templates + filters
         if (p.getBoolean("wh_enabled", false) &&
