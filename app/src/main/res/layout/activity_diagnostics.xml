@@ -1,11 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:padding="16dp">
+
     <TextView
-        android:id="@+id/textDiagnostics"
+        android:id="@+id/txtDiagnostics"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="16sp" />
-</ScrollView>
+        android:textSize="14sp"
+        android:text="Diagnostics output will appear here."/>
+
+    <Button
+        android:id="@+id/btnRunDiagnostics"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/run_diagnostics"
+        android:layout_marginTop="12dp"/>
+</LinearLayout>
