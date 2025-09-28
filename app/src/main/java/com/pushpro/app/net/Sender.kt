@@ -69,7 +69,29 @@ object Sender {
     fun forward(ctx: Context, title: String, text: String, pkg: String) {
         val p = ctx.getSharedPreferences("prefs", Context.MODE_PRIVATE)
 
-        // WEBHOOK
+        // ----- EMAIL -----
+        if (p.getBoolean("email_enabled", false) &&
+            allowByWhitelist(p.getString("email_input_whitelist", ""), title, text, pkg)
+        ) {
+            val host = p.getString("email_input_host", "") ?: ""
+            val port = p.getString("email_input_port", "") ?: ""
+            val user = p.getString("email_input_user", "") ?: ""
+            val pass = p.getString("email_input_pass", "") ?: ""
+            val tls  = p.getInt("email_input_tls_mode", 1) // 0=None, 1=STARTTLS, 2=SSL
+            val to   = p.getString("email_input_recipient", "") ?: ""
+            val prefix = p.getString("email_input_subject_prefix", "") ?: ""
+            val subject = (if (prefix.isNotBlank()) "$prefix " else "") + title
+            val body = buildString {
+                append(text).append('\n')
+                append(pkg).append('\n')
+                append(sdf.format(Date()))
+            }
+            thread {
+                EmailSender.sendEmail(ctx, host, port, user, pass, tls, to, subject, body)
+            }
+        }
+
+        // ----- WEBHOOK -----
         if (p.getBoolean("wh_enabled", false) &&
             allowByWhitelist(p.getString("wh_whitelist", ""), title, text, pkg)
         ) {
@@ -80,7 +102,7 @@ object Sender {
             thread { sendWebhook(ctx, url, methodIdx, tplIdx, headers, title, text, pkg) }
         }
 
-        // TELEGRAM
+        // ----- TELEGRAM -----
         if (p.getBoolean("tg_enabled", false) &&
             allowByWhitelist(p.getString("tg_whitelist", ""), title, text, pkg)
         ) {
@@ -172,10 +194,8 @@ object Sender {
             }
 
             val code = conn.responseCode
-            // Response lesen (best effort), Fehler nicht werfen
             try { BufferedReader(InputStreamReader(conn.inputStream)).readText() } catch (_: Throwable) {}
 
-            // Log + Flag + (bei Test) Toast
             LogUtil.append(ctx, if (code in 200..299) "Webhook test OK" else "Webhook test FAILED (code=$code)")
             if (title == "PushPro Test") toast(ctx, if (code in 200..299) "Webhook test OK" else "Webhook test failed")
 

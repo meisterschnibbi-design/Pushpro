@@ -12,7 +12,12 @@ import java.net.Socket
 import javax.net.ssl.SSLSocket
 import javax.net.ssl.SSLSocketFactory
 
-/** Minimal SMTP client for test sends (None/STARTTLS/SSL). */
+/**
+ * Minimaler SMTP-Client für Test- und Echtversand.
+ * Unterstützt: NONE (25), STARTTLS (587), SSL/TLS (465)
+ *
+ * Wichtig: Viele Provider (z. B. Gmail) verlangen App-Passwörter / spezielle Ports.
+ */
 object EmailSender {
 
     /** tlsMode: 0=None, 1=STARTTLS, 2=SSL/TLS */
@@ -26,35 +31,69 @@ object EmailSender {
         recipient: String,
         subjectPrefix: String?
     ): Pair<Boolean, String> {
+        val subject = ((subjectPrefix ?: "").takeIf { it.isNotBlank() }?.let { "$it " } ?: "") + "PushPro Test"
+        val now = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date())
+        val body = "Test from PushPro at $now"
+        return sendEmail(ctx, host, portStr, user, pass, tlsMode, recipient, subject, body)
+    }
+
+    /** Echter Versand (für Weiterleitung realer Pushes) */
+    fun sendEmail(
+        ctx: Context,
+        host: String,
+        portStr: String,
+        user: String,
+        pass: String,
+        tlsMode: Int,
+        recipient: String,
+        subject: String,
+        body: String
+    ): Pair<Boolean, String> {
         return try {
             val port = portStr.toIntOrNull() ?: when (tlsMode) { 2 -> 465; 1 -> 587; else -> 25 }
             val domain = "android.pushpro"
 
             fun connectPlain(): Triple<Socket, BufferedReader, BufferedWriter> {
                 val sock = Socket()
-                sock.soTimeout = 8000
-                sock.connect(InetSocketAddress(host, port), 8000)
-                val reader = BufferedReader(InputStreamReader(sock.getInputStream(), Charsets.UTF_8))
-                val writer = BufferedWriter(OutputStreamWriter(sock.getOutputStream(), Charsets.UTF_8))
-                return Triple(sock, reader, writer)
+                sock.soTimeout = 10000
+                sock.connect(InetSocketAddress(host, port), 10000)
+                val r = BufferedReader(InputStreamReader(sock.getInputStream(), Charsets.UTF_8))
+                val w = BufferedWriter(OutputStreamWriter(sock.getOutputStream(), Charsets.UTF_8))
+                return Triple(sock, r, w)
             }
 
             fun upgradeToTls(sock: Socket): Triple<Socket, BufferedReader, BufferedWriter> {
                 val factory = SSLSocketFactory.getDefault() as SSLSocketFactory
                 val ssl = factory.createSocket(sock, host, port, true) as SSLSocket
+                ssl.soTimeout = 10000
                 ssl.startHandshake()
-                val reader = BufferedReader(InputStreamReader(ssl.getInputStream(), Charsets.UTF_8))
-                val writer = BufferedWriter(OutputStreamWriter(ssl.getOutputStream(), Charsets.UTF_8))
-                return Triple(ssl, reader, writer)
+                val r = BufferedReader(InputStreamReader(ssl.getInputStream(), Charsets.UTF_8))
+                val w = BufferedWriter(OutputStreamWriter(ssl.getOutputStream(), Charsets.UTF_8))
+                return Triple(ssl, r, w)
             }
 
+            fun send(w: BufferedWriter, s: String) { w.write(s); w.write("\r\n"); w.flush() }
             fun readLine(r: BufferedReader): String = r.readLine() ?: ""
-            fun send(w: BufferedWriter, s: String) { w.write(s + "\r\n"); w.flush() }
+
+            fun readExpect(r: BufferedReader, code: String): String {
+                val line = readLine(r)
+                if (!line.startsWith(code)) throw RuntimeException("Expected $code but got: $line")
+                return line
+            }
+
+            fun readEhlo(r: BufferedReader) {
+                // Erste Zeile muss 250 sein; ggf. 250-Feature-Liste, bis finale 250 <OK>
+                var line = readLine(r)
+                if (!line.startsWith("250")) throw RuntimeException("EHLO not accepted: $line")
+                while (line.startsWith("250-")) line = readLine(r)
+                if (!line.startsWith("250")) throw RuntimeException("EHLO end not OK: $line")
+            }
 
             var (sock, r, w) = if (tlsMode == 2) {
+                // SMTPS (SSL/TLS)
                 val factory = SSLSocketFactory.getDefault() as SSLSocketFactory
                 val ssl = factory.createSocket(host, port) as SSLSocket
-                ssl.soTimeout = 8000
+                ssl.soTimeout = 10000
                 ssl.startHandshake()
                 Triple(ssl as Socket,
                     BufferedReader(InputStreamReader(ssl.getInputStream(), Charsets.UTF_8)),
@@ -63,40 +102,39 @@ object EmailSender {
                 connectPlain()
             }
 
-            // Greeting
-            readLine(r)
+            // 220 Greeting
+            readExpect(r, "220")
 
             // EHLO
-            send(w, "EHLO $domain"); readLine(r)
+            send(w, "EHLO $domain"); readEhlo(r)
 
             if (tlsMode == 1) {
-                // STARTTLS
+                // STARTTLS 220 -> TLS-Upgrade -> EHLO erneut
                 send(w, "STARTTLS")
-                val resp = readLine(r)
-                if (!resp.startsWith("220")) throw RuntimeException("STARTTLS failed: $resp")
-                val t = upgradeToTls(sock)
-                sock = t.first; r = t.second; w = t.third
-                send(w, "EHLO $domain"); readLine(r)
+                readExpect(r, "220")
+                val up = upgradeToTls(sock)
+                sock = up.first; r = up.second; w = up.third
+                send(w, "EHLO $domain"); readEhlo(r)
             }
 
+            // AUTH LOGIN (falls user gesetzt)
             if (user.isNotBlank()) {
-                send(w, "AUTH LOGIN"); readLine(r)
-                send(w, Base64.encodeToString(user.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)); readLine(r)
+                send(w, "AUTH LOGIN")
+                readExpect(r, "334") // username?
+                send(w, Base64.encodeToString(user.toByteArray(Charsets.UTF_8), Base64.NO_WRAP))
+                readExpect(r, "334") // password?
                 send(w, Base64.encodeToString(pass.toByteArray(Charsets.UTF_8), Base64.NO_WRAP))
-                val authResp = readLine(r)
-                if (!authResp.startsWith("235")) throw RuntimeException("AUTH failed: $authResp")
+                readExpect(r, "235") // authenticated
             }
 
-            val from = user.ifBlank { "noreply@pushpro" }
+            val from = if (user.isNotBlank()) user else "noreply@pushpro"
 
-            send(w, "MAIL FROM:<$from>"); readLine(r)
-            send(w, "RCPT TO:<$recipient>"); readLine(r)
-            send(w, "DATA"); readLine(r)
+            // MAIL / RCPT / DATA
+            send(w, "MAIL FROM:<$from>"); readExpect(r, "250")
+            send(w, "RCPT TO:<$recipient>"); readExpect(r, "250")
+            send(w, "DATA"); readExpect(r, "354")
 
-            val now = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date())
-            val subject = ((subjectPrefix ?: "").takeIf { it.isNotBlank() }?.let { "$it " } ?: "") + "PushPro Test"
-            val body = "Test from PushPro at $now"
-
+            // Nachricht
             w.write("Subject: $subject\r\n")
             w.write("From: $from\r\n")
             w.write("To: $recipient\r\n")
@@ -107,17 +145,15 @@ object EmailSender {
             w.write("\r\n.\r\n")
             w.flush()
 
-            val dataResp = readLine(r)
-            if (!dataResp.startsWith("250")) throw RuntimeException("DATA failed: $dataResp")
-
+            readExpect(r, "250")
             send(w, "QUIT")
             sock.close()
 
             LogUtil.append(ctx, "Email test OK → $recipient via $host:$port (mode=$tlsMode)")
-            Pair(true, "OK")
+            true to "OK"
         } catch (e: Throwable) {
             LogUtil.append(ctx, "Email test FAILED (${e.message ?: "error"})")
-            Pair(false, e.message ?: "error")
+            false to (e.message ?: "error")
         }
     }
 }
