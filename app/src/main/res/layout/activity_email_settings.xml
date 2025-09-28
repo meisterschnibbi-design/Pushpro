@@ -2,7 +2,6 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-
     <LinearLayout
         android:id="@+id/rootEmail"
         android:orientation="vertical"
@@ -21,7 +20,6 @@
         <EditText android:id="@+id/inputUser" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/smtp_username"/>
         <EditText android:id="@+id/inputPass" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/smtp_password" android:inputType="textPassword"/>
         <Spinner android:id="@+id/spinnerTls" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <EditText android:id="@+id/inputFrom" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/email_from"/>
         <EditText android:id="@+id/inputRecipient" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/email_recipient"/>
         <EditText android:id="@+id/inputSubjectPrefix" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/subject_prefix"/>
         <EditText android:id="@+id/inputWhitelist" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/channel_whitelist_hint"/>

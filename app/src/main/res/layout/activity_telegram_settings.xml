@@ -1,21 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:padding="16dp"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-    <Switch
-        android:id="@+id/switchEnabled"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/enabled" />
+        <Switch
+            android:id="@+id/switchEnabled"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/enabled" />
 
-    <EditText android:id="@+id/inputBotToken" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/telegram_token"/>
-    <EditText android:id="@+id/inputChatId" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/telegram_chat_id"/>
-    <Spinner android:id="@+id/spinnerParseMode" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-    <EditText android:id="@+id/inputHeaderPrefix" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/subject_prefix"/>
+        <EditText android:id="@+id/inputBotToken" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/telegram_token"/>
+        <EditText android:id="@+id/inputChatId" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/telegram_chat_id"/>
+        <Spinner android:id="@+id/spinnerParseMode" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <EditText android:id="@+id/inputHeaderPrefix" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/subject_prefix"/>
 
-    <Button android:id="@+id/btnSave" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/save"/>
-    <Button android:id="@+id/btnSendTestTelegram" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/send_test"/>
-</LinearLayout>
+        <CheckBox android:id="@+id/chkDisablePreview" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/telegram_disable_preview"/>
+        <CheckBox android:id="@+id/chkSilent" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/telegram_silent"/>
+        <CheckBox android:id="@+id/chkProtect" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/telegram_protect"/>
+
+        <EditText android:id="@+id/inputWhitelist" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/channel_whitelist_hint"/>
+
+        <Button android:id="@+id/btnSave" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/save"/>
+        <Button android:id="@+id/btnSendTestTelegram" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/send_test"/>
+    </LinearLayout>
+</ScrollView>

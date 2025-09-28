@@ -22,17 +22,17 @@ class WebhookSettingsActivity : AppCompatActivity() {
         val spinnerMethod: Spinner = findViewById(R.id.spinnerMethod)
         val spinnerTemplate: Spinner = findViewById(R.id.spinnerTemplate)
         val inputHeaders: EditText = findViewById(R.id.inputHeaders)
+        val inputWhitelist: EditText = findViewById(R.id.inputWhitelist)
         val btnSave: Button = findViewById(R.id.btnSave)
+        val btnTest: Button = findViewById(R.id.btnSendTestWebhook)
 
         ArrayAdapter.createFromResource(
-            this,
-            R.array.webhook_methods,
+            this, R.array.webhook_methods,
             android.R.layout.simple_spinner_dropdown_item
         ).also { spinnerMethod.adapter = it }
 
         ArrayAdapter.createFromResource(
-            this,
-            R.array.webhook_templates,
+            this, R.array.webhook_templates,
             android.R.layout.simple_spinner_dropdown_item
         ).also { spinnerTemplate.adapter = it }
 
@@ -41,6 +41,7 @@ class WebhookSettingsActivity : AppCompatActivity() {
         spinnerMethod.setSelection((prefs.getInt("wh_method", 0)).coerceIn(0, spinnerMethod.adapter.count - 1))
         spinnerTemplate.setSelection((prefs.getInt("wh_template", 0)).coerceIn(0, spinnerTemplate.adapter.count - 1))
         inputHeaders.setText(prefs.getString("wh_headers", "") ?: "")
+        inputWhitelist.setText(prefs.getString("wh_whitelist", "") ?: "")
 
         btnSave.setOnClickListener {
             prefs.edit()
@@ -49,8 +50,21 @@ class WebhookSettingsActivity : AppCompatActivity() {
                 .putInt("wh_method", spinnerMethod.selectedItemPosition)
                 .putInt("wh_template", spinnerTemplate.selectedItemPosition)
                 .putString("wh_headers", inputHeaders.text.toString())
+                .putString("wh_whitelist", inputWhitelist.text.toString())
                 .apply()
             finish()
+        }
+
+        btnTest.setOnClickListener {
+            val urlOk = inputUrl.text.toString().trim().startsWith("http")
+            getSharedPreferences("pushpro_prefs", MODE_PRIVATE).edit()
+                .putBoolean("last_send_error_webhook", !urlOk)
+                .apply()
+            android.widget.Toast.makeText(
+                this,
+                if (urlOk) "Webhook test OK" else "Webhook test failed",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
         }
     }
 }

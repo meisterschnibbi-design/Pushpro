@@ -1,20 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:padding="16dp"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-    <Switch
-        android:id="@+id/switchEnabled"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/enabled" />
+        <Switch
+            android:id="@+id/switchEnabled"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/enabled" />
 
-    <EditText android:id="@+id/inputUrl" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/webhook_url"/>
-    <Spinner android:id="@+id/spinnerMethod" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-    <Spinner android:id="@+id/spinnerTemplate" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-    <EditText android:id="@+id/inputHeaders" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/headers_json"/>
+        <EditText
+            android:id="@+id/inputUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/webhook_url"/>
 
-    <Button android:id="@+id/btnSave" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/save"/>
-</LinearLayout>
+        <Spinner
+            android:id="@+id/spinnerMethod"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <Spinner
+            android:id="@+id/spinnerTemplate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <EditText
+            android:id="@+id/inputHeaders"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/headers_json"/>
+
+        <EditText
+            android:id="@+id/inputWhitelist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/channel_whitelist_hint"/>
+
+        <Button
+            android:id="@+id/btnSave"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/save"/>
+
+        <Button
+            android:id="@+id/btnSendTestWebhook"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/send_test"/>
+    </LinearLayout>
+</ScrollView>
