@@ -17,7 +17,7 @@ object Sender {
 
     private val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
 
-    // ---- Public API ----
+    // ---------------- Public API ----------------
 
     fun sendWebhookTest(
         ctx: Context,
@@ -65,20 +65,25 @@ object Sender {
         }
     }
 
+    /** Weiterleitung realer Benachrichtigungen (vom NotificationListener). */
     fun forward(ctx: Context, title: String, text: String, pkg: String) {
         val p = ctx.getSharedPreferences("prefs", Context.MODE_PRIVATE)
 
         // WEBHOOK
-        if (p.getBoolean("wh_enabled", false) && allowByWhitelist(p.getString("wh_whitelist", ""), title, text, pkg)) {
+        if (p.getBoolean("wh_enabled", false) &&
+            allowByWhitelist(p.getString("wh_whitelist", ""), title, text, pkg)
+        ) {
             val url = p.getString("wh_url", "") ?: ""
-            val methodIdx = p.getInt("wh_method", 1) // default POST
-            val tplIdx = p.getInt("wh_template", 0) // default json
+            val methodIdx = p.getInt("wh_method", 1) // POST
+            val tplIdx = p.getInt("wh_template", 0)  // json
             val headers = p.getString("wh_headers", "")
             thread { sendWebhook(ctx, url, methodIdx, tplIdx, headers, title, text, pkg) }
         }
 
         // TELEGRAM
-        if (p.getBoolean("tg_enabled", false) && allowByWhitelist(p.getString("tg_whitelist", ""), title, text, pkg)) {
+        if (p.getBoolean("tg_enabled", false) &&
+            allowByWhitelist(p.getString("tg_whitelist", ""), title, text, pkg)
+        ) {
             val token = p.getString("tg_token", "") ?: ""
             val chatId = p.getString("tg_chat_id", "") ?: ""
             val parseIdx = p.getInt("tg_parse_mode", 0)
@@ -86,11 +91,23 @@ object Sender {
             val disablePreview = p.getBoolean("tg_disable_preview", false)
             val silent = p.getBoolean("tg_silent", false)
             val protect = p.getBoolean("tg_protect", false)
-            thread { sendTelegram(ctx, token, chatId, parseIdx, header, "$title\n$text", disablePreview, silent, protect) }
+            thread {
+                sendTelegram(
+                    ctx = ctx,
+                    token = token,
+                    chatId = chatId,
+                    parseModeIdx = parseIdx,
+                    headerPrefix = header,
+                    text = "$title\n$text",
+                    disablePreview = disablePreview,
+                    silent = silent,
+                    protect = protect
+                )
+            }
         }
     }
 
-    // ---- Impl ----
+    // ---------------- Implementierung ----------------
 
     private fun sendWebhook(
         ctx: Context,
@@ -103,7 +120,7 @@ object Sender {
         pkg: String
     ) {
         try {
-            if (!url.startsWith("http")) throw IllegalArgumentException("Invalid URL")
+            require(url.startsWith("http")) { "Invalid URL" }
 
             val method = listOf("GET", "POST", "PUT", "PATCH").getOrElse(methodIndex) { "POST" }
             val template = listOf("json", "form", "plain", "xml").getOrElse(templateIndex) { "json" }
@@ -114,7 +131,11 @@ object Sender {
             val contentType: String
             when (template) {
                 "json" -> {
-                    payload = "{"title":"${escapeJson(title)}","text":"${escapeJson(text)}","package":"${escapeJson(pkg)}","time":"${escapeJson(now)}"}"
+                    payload =
+                        "{\"title\":\"${escapeJson(title)}\"," +
+                        "\"text\":\"${escapeJson(text)}\"," +
+                        "\"package\":\"${escapeJson(pkg)}\"," +
+                        "\"time\":\"${escapeJson(now)}\"}"
                     contentType = "application/json; charset=utf-8"
                 }
                 "form" -> {
@@ -126,7 +147,11 @@ object Sender {
                     contentType = "text/plain; charset=utf-8"
                 }
                 else -> { // xml
-                    payload = "<push><title>${escapeXml(title)}</title><text>${escapeXml(text)}</text><package>${escapeXml(pkg)}</package><time>${escapeXml(now)}</time></push>"
+                    payload =
+                        "<push><title>${escapeXml(title)}</title>" +
+                        "<text>${escapeXml(text)}</text>" +
+                        "<package>${escapeXml(pkg)}</package>" +
+                        "<time>${escapeXml(now)}</time></push>"
                     contentType = "application/xml; charset=utf-8"
                 }
             }
@@ -138,6 +163,7 @@ object Sender {
                 doInput = true
                 if (method != "GET") doOutput = true
                 setRequestProperty("Content-Type", contentType)
+                // optionale Header (einfaches JSON oder "Key: Value"-Zeilen)
                 headersJson?.let { applyUserHeaders(this, it) }
             }
 
@@ -146,8 +172,10 @@ object Sender {
             }
 
             val code = conn.responseCode
+            // Response lesen (best effort), Fehler nicht werfen
             try { BufferedReader(InputStreamReader(conn.inputStream)).readText() } catch (_: Throwable) {}
 
+            // Log + Flag + (bei Test) Toast
             LogUtil.append(ctx, if (code in 200..299) "Webhook test OK" else "Webhook test FAILED (code=$code)")
             if (title == "PushPro Test") toast(ctx, if (code in 200..299) "Webhook test OK" else "Webhook test failed")
 
@@ -177,7 +205,7 @@ object Sender {
         protect: Boolean
     ) {
         try {
-            if (token.isBlank() || chatId.isBlank()) throw IllegalArgumentException("Missing token/chatId")
+            require(token.isNotBlank() && chatId.isNotBlank()) { "Missing token/chatId" }
 
             val parse = listOf("None", "Markdown", "HTML").getOrElse(parseModeIdx) { "None" }
             val url = "https://api.telegram.org/bot$token/sendMessage"
@@ -223,7 +251,7 @@ object Sender {
         }
     }
 
-    // ---- Helpers ----
+    // ---------------- Helpers ----------------
 
     private fun allowByWhitelist(whitelistCsv: String?, title: String, text: String, pkg: String): Boolean {
         val wl = (whitelistCsv ?: "").split(',').map { it.trim() }.filter { it.isNotEmpty() }
@@ -233,7 +261,7 @@ object Sender {
         return wl.any { token -> hay.contains(token.lowercase(Locale.US)) }
     }
 
-    /** Accepts either simple lines 'Key: Value' or naive JSON {"K":"V","H":"W"} */
+    /** Akzeptiert einfache „Key: Value“-Zeilen oder sehr simples JSON {"K":"V","H":"W"}. */
     private fun applyUserHeaders(conn: HttpURLConnection, headers: String) {
         val t = headers.trim()
         if (t.startsWith("{") && t.endsWith("}")) {
@@ -261,17 +289,16 @@ object Sender {
     private fun enc(s: String): String = URLEncoder.encode(s, "UTF-8")
 
     private fun escapeJson(s: String): String =
-        s.replace("\", "\\")
-         .replace(""", "\"")
-         .replace("
-", "\n")
-         .replace("", "\r")
+        s.replace("\\", "\\\\")
+         .replace("\"", "\\\"")
+         .replace("\n", "\\n")
+         .replace("\r", "\\r")
 
     private fun escapeXml(s: String): String =
         s.replace("&", "&amp;")
          .replace("<", "&lt;")
          .replace(">", "&gt;")
-         .replace(""", "&quot;")
+         .replace("\"", "&quot;")
          .replace("'", "&apos;")
 
     private fun toast(ctx: Context, msg: String) {
