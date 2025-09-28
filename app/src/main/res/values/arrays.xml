@@ -1,22 +1,21 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string-array name="email_tls_modes">
-    <item>SSL</item><item>TLS</item><item>STARTTLS</item><item>NONE</item>
-  </string-array>
-  <string-array name="telegram_parse_modes">
-    <item>Markdown</item><item>MarkdownV2</item><item>HTML</item><item>None</item>
-  </string-array>
-  <string-array name="header_presets">
-    <item>Content-Type: application/json</item><item>Accept: application/json</item>
-  </string-array>
-  <string-array name="json_body_templates">
-    <item>{&quot;title&quot;:&quot;$title&quot;,&quot;text&quot;:&quot;$text&quot;}</item>
-    <item>{&quot;message&quot;:&quot;$text&quot;}</item>
-  </string-array>
-  <string-array name="http_methods">
-    <item>GET</item><item>POST</item><item>PUT</item><item>DELETE</item><item>PATCH</item>
-  </string-array>
-  <string-array name="content_types">
-    <item>application/json</item><item>application/x-www-form-urlencoded</item><item>text/plain</item><item>application/xml</item>
-  </string-array>
+    <string-array name="telegram_parse_modes">
+        <item>None</item>
+        <item>Markdown</item>
+        <item>HTML</item>
+    </string-array>
+
+    <string-array name="webhook_methods">
+        <item>GET</item>
+        <item>POST</item>
+        <item>PUT</item>
+        <item>PATCH</item>
+    </string-array>
+
+    <string-array name="webhook_templates">
+        <item>json</item>
+        <item>form</item>
+        <item>plain</item>
+        <item>xml</item>
+    </string-array>
 </resources>

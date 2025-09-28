@@ -1,14 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/rootTelegram"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
-    <Spinner
-        android:id="@+id/spinnerParse"
-        android:layout_width="match_parent"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <Switch
+        android:id="@+id/switchEnabled"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:entries="@array/telegram_parse_modes" />
+        android:text="@string/enabled" />
+
+    <EditText android:id="@+id/inputBotToken" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/telegram_token"/>
+    <EditText android:id="@+id/inputChatId" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/telegram_chat_id"/>
+    <Spinner android:id="@+id/spinnerParseMode" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    <EditText android:id="@+id/inputHeaderPrefix" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/subject_prefix"/>
+
+    <Button android:id="@+id/btnSave" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/save"/>
+    <Button android:id="@+id/btnSendTestTelegram" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/send_test"/>
 </LinearLayout>

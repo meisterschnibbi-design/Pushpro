@@ -1,58 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <LinearLayout
-        android:id="@+id/rootWebhook"
-        android:orientation="vertical"
-        android:padding="16dp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:endIconMode="clear_text">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputHttpMethod"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="HTTP Method (text)"
-                android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:endIconMode="clear_text">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputHeaders"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Headers (JSON)"
-                android:inputType="textMultiLine"
-                android:minLines="3" />
-        </com.google.android.material.textfield.TextInputLayout>
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:endIconMode="clear_text">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputTemplate"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Body Template"
-                android:inputType="textMultiLine"
-                android:minLines="4" />
-        </com.google.android.material.textfield.TextInputLayout>
-        <Spinner
-            android:id="@+id/spinnerMethod"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:entries="@array/http_methods" />
-        <Spinner
-            android:id="@+id/spinnerContentType"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:entries="@array/content_types" />
-    </LinearLayout>
-</ScrollView>
+
+    <Switch
+        android:id="@+id/switchEnabled"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/enabled" />
+
+    <EditText android:id="@+id/inputUrl" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/webhook_url"/>
+    <Spinner android:id="@+id/spinnerMethod" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    <Spinner android:id="@+id/spinnerTemplate" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    <EditText android:id="@+id/inputHeaders" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/headers_json"/>
+
+    <Button android:id="@+id/btnSave" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/save"/>
+</LinearLayout>

@@ -1,35 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+
     <LinearLayout
         android:id="@+id/rootEmail"
         android:orientation="vertical"
         android:padding="16dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
+
+        <Switch
+            android:id="@+id/switchEnabled"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:endIconMode="clear_text">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputFrom"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="From (email)"
-                android:inputType="textEmailAddress" />
-        </com.google.android.material.textfield.TextInputLayout>
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:endIconMode="clear_text">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputSubjectPrefix"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Subject prefix"
-                android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
+            android:text="@string/enabled" />
+
+        <EditText android:id="@+id/inputHost" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/smtp_host"/>
+        <EditText android:id="@+id/inputPort" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/smtp_port" android:inputType="number"/>
+        <EditText android:id="@+id/inputUser" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/smtp_username"/>
+        <EditText android:id="@+id/inputPass" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/smtp_password" android:inputType="textPassword"/>
+        <Spinner android:id="@+id/spinnerTls" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <EditText android:id="@+id/inputFrom" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/email_from"/>
+        <EditText android:id="@+id/inputRecipient" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/email_recipient"/>
+        <EditText android:id="@+id/inputSubjectPrefix" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/subject_prefix"/>
+        <EditText android:id="@+id/inputWhitelist" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/channel_whitelist_hint"/>
+        <EditText android:id="@+id/inputContains" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/contains_filter"/>
+
+        <Button android:id="@+id/btnSave" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/save"/>
+        <Button android:id="@+id/btnSendTestEmail" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/send_test"/>
     </LinearLayout>
 </ScrollView>

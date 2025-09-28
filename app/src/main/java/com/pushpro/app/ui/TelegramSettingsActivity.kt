@@ -17,22 +17,20 @@ class TelegramSettingsActivity : AppCompatActivity() {
 
         val prefs = getSharedPreferences("prefs", MODE_PRIVATE)
 
-        val swEnabled: Switch      = findViewById(R.id.switchEnabled)
+        val swEnabled: Switch = findViewById(R.id.switchEnabled)
         val inputBotToken: EditText = findViewById(R.id.inputBotToken)
-        val inputChatId: EditText   = findViewById(R.id.inputChatId)
+        val inputChatId: EditText = findViewById(R.id.inputChatId)
         val spinnerParseMode: Spinner = findViewById(R.id.spinnerParseMode)
         val inputHeaderPrefix: EditText = findViewById(R.id.inputHeaderPrefix)
-        val btnSave: Button           = findViewById(R.id.btnSave)
-        val btnSendTest: Button?      = findViewById(R.id.btnSendTestTelegram)
+        val btnSave: Button = findViewById(R.id.btnSave)
+        val btnSendTest: Button? = findViewById(R.id.btnSendTestTelegram)
 
-        // Parse modes (define in res/values/arrays.xml → telegram_parse_modes)
         ArrayAdapter.createFromResource(
             this,
-            R.array.telegram_parse_modes, // e.g. ["None","Markdown","HTML"]
+            R.array.telegram_parse_modes,
             android.R.layout.simple_spinner_dropdown_item
         ).also { spinnerParseMode.adapter = it }
 
-        // Load saved values
         swEnabled.isChecked = prefs.getBoolean("tg_enabled", false)
         inputBotToken.setText(prefs.getString("tg_token", "") ?: "")
         inputChatId.setText(prefs.getString("tg_chat_id", "") ?: "")
@@ -40,7 +38,6 @@ class TelegramSettingsActivity : AppCompatActivity() {
             .coerceIn(0, spinnerParseMode.adapter.count - 1))
         inputHeaderPrefix.setText(prefs.getString("tg_header_prefix", "") ?: "")
 
-        // Save
         btnSave.setOnClickListener {
             prefs.edit()
                 .putBoolean("tg_enabled", swEnabled.isChecked)
@@ -52,7 +49,6 @@ class TelegramSettingsActivity : AppCompatActivity() {
             finish()
         }
 
-        // Optional: local validation test (no real API call)
         btnSendTest?.setOnClickListener {
             val ok = inputBotToken.text.isNotBlank() && inputChatId.text.isNotBlank()
             getSharedPreferences("pushpro_prefs", MODE_PRIVATE).edit()
