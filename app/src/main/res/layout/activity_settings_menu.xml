@@ -39,12 +39,8 @@
         android:layout_marginTop="8dp"
         android:text="Reset settings" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnExportConfig"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Export config" />
+    <!-- Entfernt: einzelner Export-Button mit gleicher ID (btnExportConfig) -->
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnBlacklist"
         android:layout_width="match_parent"
@@ -59,6 +55,7 @@
         android:layout_marginTop="8dp"
         android:text="@string/btn_statistics" />
 
+    <!-- Export & Import nebeneinander -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -80,4 +77,5 @@
             android:layout_weight="1"
             android:text="@string/btn_import_config" />
     </LinearLayout>
+
 </LinearLayout>
