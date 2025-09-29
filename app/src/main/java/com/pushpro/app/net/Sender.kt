@@ -57,6 +57,7 @@ object Sender {
                 thread { sendWebhook(ctx, one, methodIndex, templateIndex, headersJson, "PushPro Test", "It works", ctx.packageName) }
             }
     }
+
     fun sendTelegramTest(ctx: Context, token: String, chatId: String, parseModeIdx: Int, headerPrefix: String?, disablePreview: Boolean, silent: Boolean, protect: Boolean) {
         // Mehrere Chat-IDs unterstützen (Komma / Strichpunkt / Whitespace)
         chatId.split(Regex("""[,;\s]+"""))
@@ -64,7 +65,8 @@ object Sender {
             .filter { it.isNotEmpty() }
             .distinct()
             .forEach { one ->
-                thread { sendTelegram(ctx, token, one, parseModeIdx, headerPrefix, "Test from PushPro", disablePreview, silent, protect) }
+                // Test: packageForTpl = null -> fällt auf ctx.packageName (com.pushpro) zurück
+                thread { sendTelegram(ctx, token, one, parseModeIdx, headerPrefix, "Test from PushPro", null, disablePreview, silent, protect) }
             }
     }
 
@@ -152,7 +154,8 @@ object Sender {
                 .filter { it.isNotEmpty() }
                 .distinct()
                 .forEach { one ->
-                    thread { sendTelegram(ctx, token, one, parseIdx, header, "$title\n$text", disablePreview, silent, protect) }
+                    // Real: packageForTpl = pkg (Absender-Paket anzeigen)
+                    thread { sendTelegram(ctx, token, one, parseIdx, header, "$title\n$text", pkg, disablePreview, silent, protect) }
                 }
         }
     }
@@ -208,7 +211,20 @@ object Sender {
         }
     }
 
-    private fun sendTelegram(ctx: Context, token: String, chatId: String, parseModeIdx: Int, headerPrefix: String?, text: String, disablePreview: Boolean, silent: Boolean, protect: Boolean) {
+    // NOTE: packageForTpl steuert, welcher Paketname in {package} landet.
+    // null -> ctx.packageName (com.pushpro), sonst der übergebene (z. B. Absender-Paket bei Real-Forward)
+    private fun sendTelegram(
+        ctx: Context,
+        token: String,
+        chatId: String,
+        parseModeIdx: Int,
+        headerPrefix: String?,
+        text: String,
+        packageForTpl: String?,
+        disablePreview: Boolean,
+        silent: Boolean,
+        protect: Boolean
+    ) {
         try {
             val parse = listOf("None","Markdown","HTML").getOrElse(parseModeIdx) { "None" }
             val url = "https://api.telegram.org/bot$token/sendMessage"
@@ -218,7 +234,8 @@ object Sender {
             val tplDefault = "{title}\n{text}\n{package}\n{time}"
             val now = sdf.format(Date())
             val title = headerPrefix?.takeIf { it.isNotBlank() } ?: ""
-            val msg = resolveTpl(if (tplStored.isNotBlank()) tplStored else tplDefault, title, text, ctx.packageName, now)
+            val effectivePkg = packageForTpl ?: ctx.packageName
+            val msg = resolveTpl(if (tplStored.isNotBlank()) tplStored else tplDefault, title, text, effectivePkg, now)
 
             val params = mutableMapOf(
                 "chat_id" to chatId,
