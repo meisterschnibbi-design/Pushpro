@@ -48,10 +48,24 @@ object Sender {
 
     // Public tests
     fun sendWebhookTest(ctx: Context, url: String, methodIndex: Int, templateIndex: Int, headersJson: String?) {
-        thread { sendWebhook(ctx, url, methodIndex, templateIndex, headersJson, "PushPro Test", "It works", ctx.packageName) }
+        // Mehrere Webhook-URLs unterstützen (Komma / Strichpunkt / Whitespace / Zeilenumbruch)
+        url.split(Regex("""[,;\s]+"""))
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .forEach { one ->
+                thread { sendWebhook(ctx, one, methodIndex, templateIndex, headersJson, "PushPro Test", "It works", ctx.packageName) }
+            }
     }
     fun sendTelegramTest(ctx: Context, token: String, chatId: String, parseModeIdx: Int, headerPrefix: String?, disablePreview: Boolean, silent: Boolean, protect: Boolean) {
-        thread { sendTelegram(ctx, token, chatId, parseModeIdx, headerPrefix, "Test from PushPro", disablePreview, silent, protect) }
+        // Mehrere Chat-IDs unterstützen (Komma / Strichpunkt / Whitespace)
+        chatId.split(Regex("""[,;\s]+"""))
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .forEach { one ->
+                thread { sendTelegram(ctx, token, one, parseModeIdx, headerPrefix, "Test from PushPro", disablePreview, silent, protect) }
+            }
     }
 
     // Forward real pushes
@@ -230,7 +244,7 @@ object Sender {
         }
     }
 
-    // Headers helper (simple JSON or "Key: Value" lines)
+    // Headers helper (simple JSON oder "Key: Value"-Zeilen)
     private fun applyUserHeaders(conn: HttpURLConnection, headers: String) {
         val t = headers.trim()
         if (t.startsWith("{") && t.endsWith("}")) {
