@@ -83,7 +83,10 @@ object Sender {
                 append(pkg).append('\n')
                 append(sdf.format(Date()))
             }
-            thread { EmailSender.sendEmail(ctx, host, port, user, pass, tls, to, subject, body) }
+            // Support multiple recipients: split by comma/semicolon/whitespace
+            to.split(Regex("[,;\s]+")).map { it.trim() }.filter { it.isNotEmpty() }.distinct().forEach { one ->
+                thread { EmailSender.sendEmail(ctx, host, port, user, pass, tls, one, subject, body) }
+            }
         }
 
         // WEBHOOK: templates + filters
@@ -94,7 +97,10 @@ object Sender {
             val methodIdx = p.getInt("wh_method", 1)
             val tplIdx = p.getInt("wh_template", 0)
             val headers = p.getString("wh_headers", "")
-            thread { sendWebhook(ctx, url, methodIdx, tplIdx, headers, title, text, pkg) }
+            // Support multiple webhook URLs: split by comma/semicolon/whitespace/newlines
+            url.split(Regex("[,;\s]+")).map { it.trim() }.filter { it.isNotEmpty() }.distinct().forEach { one ->
+                thread { sendWebhook(ctx, one, methodIdx, tplIdx, headers, title, text, pkg) }
+            }
         }
 
         // TELEGRAM: template + filters
