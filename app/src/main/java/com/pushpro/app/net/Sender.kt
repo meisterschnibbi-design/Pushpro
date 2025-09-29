@@ -51,7 +51,10 @@ object Sender {
         thread { sendWebhook(ctx, url, methodIndex, templateIndex, headersJson, "PushPro Test", "It works", ctx.packageName) }
     }
     fun sendTelegramTest(ctx: Context, token: String, chatId: String, parseModeIdx: Int, headerPrefix: String?, disablePreview: Boolean, silent: Boolean, protect: Boolean) {
-        thread { sendTelegram(ctx, token, chatId, parseModeIdx, headerPrefix, "Test from PushPro", disablePreview, silent, protect) }
+        // Support multiple Telegram chat IDs: split by comma/semicolon/whitespace
+        chatId.split(Regex("""[,;\s]+""")).map { it.trim() }.filter { it.isNotEmpty() }.distinct().forEach { one ->
+            thread { sendTelegram(ctx, token, one, parseModeIdx, header, "$title\n$text", disablePreview, silent, protect) }
+        }
     }
 
     // Forward real pushes
@@ -84,7 +87,7 @@ object Sender {
                 append(sdf.format(Date()))
             }
             // Support multiple recipients: split by comma/semicolon/whitespace
-            to.split(Regex("[,;\s]+")).map { it.trim() }.filter { it.isNotEmpty() }.distinct().forEach { one ->
+            to.split(Regex("""[,;\s]+""")).map { it.trim() }.filter { it.isNotEmpty() }.distinct().forEach { one ->
                 thread { EmailSender.sendEmail(ctx, host, port, user, pass, tls, one, subject, body) }
             }
         }
@@ -98,7 +101,7 @@ object Sender {
             val tplIdx = p.getInt("wh_template", 0)
             val headers = p.getString("wh_headers", "")
             // Support multiple webhook URLs: split by comma/semicolon/whitespace/newlines
-            url.split(Regex("[,;\s]+")).map { it.trim() }.filter { it.isNotEmpty() }.distinct().forEach { one ->
+            url.split(Regex("""[,;\s]+""")).map { it.trim() }.filter { it.isNotEmpty() }.distinct().forEach { one ->
                 thread { sendWebhook(ctx, one, methodIdx, tplIdx, headers, title, text, pkg) }
             }
         }
@@ -114,7 +117,10 @@ object Sender {
             val disablePreview = p.getBoolean("tg_disable_preview", false)
             val silent = p.getBoolean("tg_silent", false)
             val protect = p.getBoolean("tg_protect", false)
-            thread { sendTelegram(ctx, token, chatId, parseIdx, header, "$title\n$text", disablePreview, silent, protect) }
+            // Support multiple Telegram chat IDs: split by comma/semicolon/whitespace
+            chatId.split(Regex("""[,;\s]+""")).map { it.trim() }.filter { it.isNotEmpty() }.distinct().forEach { one ->
+                thread { sendTelegram(ctx, token, one, parseModeIdx, header, "$title\n$text", disablePreview, silent, protect) }
+            }
         }
     }
 
