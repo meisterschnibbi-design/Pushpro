@@ -53,7 +53,7 @@ object Sender {
     fun sendTelegramTest(ctx: Context, token: String, chatId: String, parseModeIdx: Int, headerPrefix: String?, disablePreview: Boolean, silent: Boolean, protect: Boolean) {
         // Support multiple Telegram chat IDs: split by comma/semicolon/whitespace
         chatId.split(Regex("""[,;\s]+""")).map { it.trim() }.filter { it.isNotEmpty() }.distinct().forEach { one ->
-            thread { sendTelegram(ctx, token, one, parseModeIdx, header, "$title\n$text", disablePreview, silent, protect) }
+            thread { sendTelegram(ctx, token, one, parseModeIdx, header, "Test from PushPro", disablePreview, silent, protect) }
         }
     }
 
@@ -119,7 +119,7 @@ object Sender {
             val protect = p.getBoolean("tg_protect", false)
             // Support multiple Telegram chat IDs: split by comma/semicolon/whitespace
             chatId.split(Regex("""[,;\s]+""")).map { it.trim() }.filter { it.isNotEmpty() }.distinct().forEach { one ->
-                thread { sendTelegram(ctx, token, one, parseModeIdx, header, "$title\n$text", disablePreview, silent, protect) }
+                thread { sendTelegram(ctx, token, one, parseIdx, header, "$title\n$text", disablePreview, silent, protect) }
             }
         }
     }
