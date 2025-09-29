@@ -1,6 +1,8 @@
-
 package com.pushpro.app.service
 
+import android.content.ComponentName
+import android.content.Context
+import android.content.pm.PackageManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.app.Notification
@@ -29,5 +31,26 @@ class NotificationRelayService : NotificationListenerService() {
 
     override fun onListenerConnected() {
         LogUtil.append(this, "Notification listener connected")
+    }
+
+    override fun onListenerDisconnected() {
+        // Einige OEMs trennen willkürlich – Toggle erzwingt Rebind
+        ensureBound(this)
+        LogUtil.append(this, "Notification listener disconnected – rebind issued")
+    }
+
+    companion object {
+        fun ensureBound(ctx: Context) {
+            try {
+                val cn = ComponentName(ctx, NotificationRelayService::class.java)
+                val pm = ctx.packageManager
+                pm.setComponentEnabledSetting(cn,
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP)
+                pm.setComponentEnabledSetting(cn,
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP)
+            } catch (_: Throwable) {}
+        }
     }
 }
