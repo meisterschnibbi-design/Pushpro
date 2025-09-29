@@ -51,10 +51,7 @@ object Sender {
         thread { sendWebhook(ctx, url, methodIndex, templateIndex, headersJson, "PushPro Test", "It works", ctx.packageName) }
     }
     fun sendTelegramTest(ctx: Context, token: String, chatId: String, parseModeIdx: Int, headerPrefix: String?, disablePreview: Boolean, silent: Boolean, protect: Boolean) {
-        // Support multiple Telegram chat IDs: split by comma/semicolon/whitespace
-        chatId.split(Regex("""[,;\s]+""")).map { it.trim() }.filter { it.isNotEmpty() }.distinct().forEach { one ->
-            thread { sendTelegram(ctx, token, one, parseModeIdx, header, "Test from PushPro", disablePreview, silent, protect) }
-        }
+        thread { sendTelegram(ctx, token, chatId, parseModeIdx, headerPrefix, "Test from PushPro", disablePreview, silent, protect) }
     }
 
     // Forward real pushes
@@ -86,10 +83,14 @@ object Sender {
                 append(pkg).append('\n')
                 append(sdf.format(Date()))
             }
-            // Support multiple recipients: split by comma/semicolon/whitespace
-            to.split(Regex("""[,;\s]+""")).map { it.trim() }.filter { it.isNotEmpty() }.distinct().forEach { one ->
-                thread { EmailSender.sendEmail(ctx, host, port, user, pass, tls, one, subject, body) }
-            }
+            // >>> Mehrere Empfänger unterstützen (Komma / Strichpunkt / Whitespace)
+            to.split(Regex("""[,;\s]+"""))
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+                .forEach { one ->
+                    thread { EmailSender.sendEmail(ctx, host, port, user, pass, tls, one, subject, body) }
+                }
         }
 
         // WEBHOOK: templates + filters
@@ -100,10 +101,14 @@ object Sender {
             val methodIdx = p.getInt("wh_method", 1)
             val tplIdx = p.getInt("wh_template", 0)
             val headers = p.getString("wh_headers", "")
-            // Support multiple webhook URLs: split by comma/semicolon/whitespace/newlines
-            url.split(Regex("""[,;\s]+""")).map { it.trim() }.filter { it.isNotEmpty() }.distinct().forEach { one ->
-                thread { sendWebhook(ctx, one, methodIdx, tplIdx, headers, title, text, pkg) }
-            }
+            // >>> Mehrere URLs unterstützen (Komma / Strichpunkt / Whitespace / Zeilenumbruch)
+            url.split(Regex("""[,;\s]+"""))
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+                .forEach { one ->
+                    thread { sendWebhook(ctx, one, methodIdx, tplIdx, headers, title, text, pkg) }
+                }
         }
 
         // TELEGRAM: template + filters
@@ -117,10 +122,14 @@ object Sender {
             val disablePreview = p.getBoolean("tg_disable_preview", false)
             val silent = p.getBoolean("tg_silent", false)
             val protect = p.getBoolean("tg_protect", false)
-            // Support multiple Telegram chat IDs: split by comma/semicolon/whitespace
-            chatId.split(Regex("""[,;\s]+""")).map { it.trim() }.filter { it.isNotEmpty() }.distinct().forEach { one ->
-                thread { sendTelegram(ctx, token, one, parseIdx, header, "$title\n$text", disablePreview, silent, protect) }
-            }
+            // >>> Mehrere Chat-IDs unterstützen (Komma / Strichpunkt / Whitespace)
+            chatId.split(Regex("""[,;\s]+"""))
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+                .forEach { one ->
+                    thread { sendTelegram(ctx, token, one, parseIdx, header, "$title\n$text", disablePreview, silent, protect) }
+                }
         }
     }
 
