@@ -50,4 +50,11 @@
   <string name="telegram_thread_id_hint">Thread/Topic ID (optional)</string>
   <string name="send_test">Send Test</string>
   <string name="title_webhook">Webhook</string>
+
+  <string name="btn_blacklist">Blacklist</string>
+  <string name="btn_statistics">Statistics</string>
+  <string name="btn_export_config">Export config</string>
+  <string name="btn_import_config">Import config</string>
+  <string name="blacklist_title">Blacklist Apps (blocked globally)</string>
+
 </resources>

@@ -45,4 +45,39 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="Export config" />
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnBlacklist"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/btn_blacklist" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnStatistics"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/btn_statistics" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnExportConfig"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/btn_export_config" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnImportConfig"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:text="@string/btn_import_config" />
+    </LinearLayout>
 </LinearLayout>

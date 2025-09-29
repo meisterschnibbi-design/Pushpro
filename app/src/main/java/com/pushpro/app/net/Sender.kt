@@ -79,6 +79,16 @@ object Sender {
 
         val p = ctx.getSharedPreferences("prefs", Context.MODE_PRIVATE)
 
+        // Global blacklist check
+        run {
+            val b = ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE)
+            val blocked = b.getStringSet("blacklist_set", emptySet()) ?: emptySet()
+            if (blocked.contains(pkg)) {
+                com.pushpro.app.util.LogUtil.append(ctx, "Blocked by blacklist: $pkg")
+                return
+            }
+        }
+
         // EMAIL: echte Weiterleitung (Test bleibt separat)
         if (p.getBoolean("email_enabled", false) &&
             allowByWhitelist(p.getString("email_input_whitelist", ""), title, text, pkg) &&
@@ -185,13 +195,13 @@ object Sender {
             }
             val code = conn.responseCode
             try { BufferedReader(InputStreamReader(conn.inputStream)).readText() } catch (_:Throwable){}
-            LogUtil.append(ctx, if (code in 200..299) "Webhook test OK" else "Webhook test FAILED (code=$code)")
+            run { val isTest = (title == "PushPro Test"); LogUtil.append(ctx, if (code in 200..299) (if (isTest) "Webhook test OK" else "Webhook OK") else (if (isTest) "Webhook test FAILED (code=$code)" else "Webhook FAILED (code=$code)")) }
             if (title == "PushPro Test") toast(ctx, if (code in 200..299) "Webhook test OK" else "Webhook test failed")
             ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE).edit()
                 .putBoolean("last_send_error_webhook", code !in 200..299).apply()
             conn.disconnect()
         } catch (e: Throwable) {
-            LogUtil.append(ctx, "Webhook test FAILED (${e.message ?: "error"})")
+            run { val isTest = (title == "PushPro Test"); LogUtil.append(ctx, if (isTest) "Webhook test FAILED (${e.message ?: "error"})" else "Webhook FAILED (${e.message ?: "error"})") }
             if (title == "PushPro Test") toast(ctx, "Webhook test failed")
             ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE).edit()
                 .putBoolean("last_send_error_webhook", true).apply()
@@ -231,13 +241,13 @@ object Sender {
             BufferedOutputStream(conn.outputStream).use { it.write(body.toByteArray(Charsets.UTF_8)) }
             val code = conn.responseCode
             try { BufferedReader(InputStreamReader(conn.inputStream)).readText() } catch (_:Throwable){}
-            LogUtil.append(ctx, if (code in 200..299) "Telegram test OK" else "Telegram test FAILED (code=$code)")
+            run { val isTest = (text == "Test from PushPro"); LogUtil.append(ctx, if (code in 200..299) (if (isTest) "Telegram test OK" else "Telegram OK") else (if (isTest) "Telegram test FAILED (code=$code)" else "Telegram FAILED (code=$code)")) }
             if (text == "Test from PushPro") toast(ctx, if (code in 200..299) "Telegram test OK" else "Telegram test failed")
             ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE).edit()
                 .putBoolean("last_send_error_tg", code !in 200..299).apply()
             conn.disconnect()
         } catch (e: Throwable) {
-            LogUtil.append(ctx, "Telegram test FAILED (${e.message ?: "error"})")
+            run { val isTest = (text == "Test from PushPro"); LogUtil.append(ctx, if (isTest) "Telegram test FAILED (${e.message ?: "error"})" else "Telegram FAILED (${e.message ?: "error"})") }
             if (text == "Test from PushPro") toast(ctx, "Telegram test failed")
             ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE).edit()
                 .putBoolean("last_send_error_tg", true).apply()

@@ -1,6 +1,9 @@
+
 package com.pushpro.app.ui
 
+import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
@@ -10,6 +13,10 @@ import com.pushpro.R
 import com.pushpro.app.util.LogUtil
 
 class SettingsActivity : AppCompatActivity() {
+
+    private val REQ_EXPORT = 1001
+    private val REQ_IMPORT = 1002
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings_menu)
@@ -34,73 +41,136 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         findViewById<MaterialButton>(R.id.btnDiagnostics).setOnClickListener {
-            val p = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
-            val checks = listOf(
-                "global_enabled=" + p.getBoolean("global_enabled", false),
-                "webhook_enabled=" + p.getBoolean("webhook_enabled", false),
-                "email_enabled=" + (p.getBoolean("email_enabled", false) || p.getBoolean("email_input_enabled", false)),
-                "telegram_enabled=" + p.getBoolean("telegram_enabled", false)
-            )
-            LogUtil.append(this, "Diagnostics: " + checks.joinToString(", "))
-            Toast.makeText(this, "Diagnostics written to logs", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, DiagnosticsActivity::class.java))
         }
 
-        // FULL RESET ONLY HERE (no per-screen resets)
         findViewById<MaterialButton>(R.id.btnResetSettings).setOnClickListener {
-            // 1) Clear both stores
-            getSharedPreferences("pushpro_prefs", MODE_PRIVATE).edit().clear().apply()
-            getSharedPreferences("prefs", MODE_PRIVATE).edit().clear().apply()
-
-            // 2) Restore defaults/templates in prefs
-            val tplJson  = """{ "title": "{title}", "text": "{text}", "package": "{package}", "time": "{time}" }"""
-            val tplForm  = """title={title}&text={text}&package={package}&time={time}"""
-            val tplPlain = "{title}\n{text}\n{package}\n{time}"
-            val tplXml   = """<push><title>{title}</title><text>{text}</text><package>{package}</package><time>{time}</time></push>"""
-            val tgTpl    = "{title}\n{text}\n{package}\n{time}"
-
-            getSharedPreferences("prefs", MODE_PRIVATE).edit()
-                // Webhook defaults
-                .putString("wh_tpl_json",  tplJson)
-                .putString("wh_tpl_form",  tplForm)
-                .putString("wh_tpl_plain", tplPlain)
-                .putString("wh_tpl_xml",   tplXml)
-                .putInt("wh_method", 1)     // POST
-                .putInt("wh_template", 0)   // json
-                .putString("wh_contains", "")
-                .putString("wh_whitelist", "")
-                // Telegram defaults
-                .putString("tg_tpl", tgTpl)
-                .putInt("tg_parse_mode", 0) // None
-                .putString("tg_contains", "")
-                .putString("tg_whitelist", "")
-                // Channel enable flags -> OFF
-                .putBoolean("wh_enabled", false)
-                .putBoolean("tg_enabled", false)
+            val px = getSharedPreferences("prefs", MODE_PRIVATE)
+            val pp = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
+            px.edit()
+                .clear()
+                .apply()
+            pp.edit()
+                .putBoolean("global_enabled", false)
+                .putBoolean("webhook_enabled", false)
                 .putBoolean("email_enabled", false)
+                .putBoolean("telegram_enabled", false)
                 .apply()
 
             LogUtil.append(this, "Settings reset to defaults (templates & modes restored)")
             Toast.makeText(this, "All settings & templates reset", Toast.LENGTH_SHORT).show()
         }
 
+        // New: Blacklist & Statistics
+        findViewById<MaterialButton>(R.id.btnBlacklist)?.setOnClickListener {
+            startActivity(Intent(this, BlacklistActivity::class.java))
+        }
+        findViewById<MaterialButton>(R.id.btnStatistics)?.setOnClickListener {
+            startActivity(Intent(this, StatisticsActivity::class.java))
+        }
+
+        // Export via SAF
         findViewById<MaterialButton>(R.id.btnExportConfig).setOnClickListener {
-            val p = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
-            val all = p.all
-            val sb = StringBuilder().append("{\n")
-            val it = all.entries.iterator()
+            val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "application/json"
+                putExtra(Intent.EXTRA_TITLE, "pushpro-config.json")
+            }
+            startActivityForResult(intent, REQ_EXPORT)
+        }
+
+        // Import via SAF
+        findViewById<MaterialButton>(R.id.btnImportConfig)?.setOnClickListener {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "application/json"
+            }
+            startActivityForResult(intent, REQ_IMPORT)
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode != Activity.RESULT_OK || data == null) return
+        val uri: Uri = data.data ?: return
+
+        when (requestCode) {
+            REQ_EXPORT -> {
+                try {
+                    val json = exportAllAsJson()
+                    contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray(Charsets.UTF_8)) }
+                    Toast.makeText(this, "Config exported", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Export failed: " + (e.message ?: "error"), Toast.LENGTH_LONG).show()
+                }
+            }
+            REQ_IMPORT -> {
+                try {
+                    val json = contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) } ?: ""
+                    importAllFromJson(json)
+                    Toast.makeText(this, "Config imported", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Import failed: " + (e.message ?: "error"), Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    private fun exportAllAsJson(): String {
+        val p1 = getSharedPreferences("prefs", MODE_PRIVATE).all
+        val p2 = getSharedPreferences("pushpro_prefs", MODE_PRIVATE).all
+        fun mapToJson(m: Map<String, *>): String {
+            val sb = StringBuilder().append("{")
+            val it = m.entries.iterator()
             while (it.hasNext()) {
                 val e = it.next()
-                sb.append("  \"").append(e.key).append("\": \"").append((e.value)?.toString() ?: "").append("\"")
+                sb.append("\"").append(e.key).append("\": \"").append((e.value)?.toString() ?: "").append("\"")
                 if (it.hasNext()) sb.append(",")
-                sb.append("\n")
             }
             sb.append("}")
-            val share = Intent(Intent.ACTION_SEND).apply {
-                type = "application/json"
-                putExtra(Intent.EXTRA_SUBJECT, "PushPro Config")
-                putExtra(Intent.EXTRA_TEXT, sb.toString())
-            }
-            startActivity(Intent.createChooser(share, "Export config"))
+            return sb.toString()
         }
+        return "{\n\"prefs\": " + mapToJson(p1) + ", \n\"pushpro_prefs\": " + mapToJson(p2) + "\n}"
+    }
+
+    private fun importAllFromJson(json: String) {
+        // very simple parser expecting {"prefs": {...}, "pushpro_prefs": {...}}
+        fun extract(section: String): Map<String, String> {
+            val key = "\"" + section + "\""
+            val start = json.indexOf(key)
+            if (start < 0) return emptyMap()
+            val brace = json.indexOf('{', start)
+            var depth = 0
+            var end = -1
+            for (i in brace until json.length) {
+                if (json[i] == '{') depth += 1
+                if (json[i] == '}') {
+                    depth -= 1
+                    if (depth == 0) { end = i; break }
+                }
+            }
+            if (end < 0) return emptyMap()
+            val body = json.substring(brace + 1, end)
+            val out = mutableMapOf<String, String>()
+            for (pair in body.split(',')) {
+                val idx = pair.indexOf(':')
+                if (idx > 0) {
+                    val k = pair.substring(0, idx).trim().trim('"')
+                    val v = pair.substring(idx + 1).trim().trim('"')
+                    out[k] = v
+                }
+            }
+            return out
+        }
+        val p1 = extract("prefs")
+        val p2 = extract("pushpro_prefs")
+
+        val sp1 = getSharedPreferences("prefs", MODE_PRIVATE).edit()
+        for ((k, v) in p1) sp1.putString(k, v)
+        sp1.apply()
+
+        val sp2 = getSharedPreferences("pushpro_prefs", MODE_PRIVATE).edit()
+        for ((k, v) in p2) sp2.putString(k, v)
+        sp2.apply()
     }
 }

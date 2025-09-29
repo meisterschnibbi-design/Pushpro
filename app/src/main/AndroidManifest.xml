@@ -41,5 +41,7 @@
             </intent-filter>
         </service>
 
-    </application>
+            <activity android:name=".app.ui.BlacklistActivity" />
+        <activity android:name=".app.ui.StatisticsActivity" />
+</application>
 </manifest>

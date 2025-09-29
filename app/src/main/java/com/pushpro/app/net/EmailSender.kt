@@ -149,10 +149,10 @@ object EmailSender {
             send(w, "QUIT")
             sock.close()
 
-            LogUtil.append(ctx, "Email test OK → $recipient via $host:$port (mode=$tlsMode)")
+            run { val isTest = subject == "PushPro Test"; LogUtil.append(ctx, (if (isTest) "Email test OK" else "Email OK") + " → " + recipient + " via " + host + ":" + portStr + " (mode=" + tlsMode + ")") }
             true to "OK"
         } catch (e: Throwable) {
-            LogUtil.append(ctx, "Email test FAILED (${e.message ?: "error"})")
+            run { val isTest = subject == "PushPro Test"; LogUtil.append(ctx, if (isTest) "Email test FAILED (${e.message ?: "error"})" else "Email FAILED (${e.message ?: "error"})") }
             false to (e.message ?: "error")
         }
     }
