@@ -1,7 +1,5 @@
-
 package com.pushpro.app.ui
 
-import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.CompoundButton
@@ -22,7 +20,6 @@ class BlacklistActivity : AppCompatActivity() {
 
         val pm = packageManager
         val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
-            .filter { (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 } // user apps first pass
             .sortedBy { pm.getApplicationLabel(it).toString().lowercase() }
 
         val prefs = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
