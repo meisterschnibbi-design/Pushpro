@@ -1,4 +1,3 @@
-
 package com.pushpro.app.ui
 
 import android.app.Activity
@@ -119,12 +118,22 @@ class SettingsActivity : AppCompatActivity() {
     private fun exportAllAsJson(): String {
         val p1 = getSharedPreferences("prefs", MODE_PRIVATE).all
         val p2 = getSharedPreferences("pushpro_prefs", MODE_PRIVATE).all
+        fun escape(s: String) = s
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+
         fun mapToJson(m: Map<String, *>): String {
             val sb = StringBuilder().append("{")
             val it = m.entries.iterator()
             while (it.hasNext()) {
                 val e = it.next()
-                sb.append("\"").append(e.key).append("\": \"").append((e.value)?.toString() ?: "").append("\"")
+                val value: String = when (val v = e.value) {
+                    is Set<*> -> "[" + v.filterNotNull().joinToString(",") { "\"${escape(it.toString())}\"" } + "]"
+                    else -> "\"${escape(v?.toString() ?: "")}\""
+                }
+                sb.append("\"").append(escape(e.key)).append("\": ").append(value)
                 if (it.hasNext()) sb.append(",")
             }
             sb.append("}")
@@ -136,7 +145,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun importAllFromJson(json: String) {
         // very simple parser expecting {"prefs": {...}, "pushpro_prefs": {...}}
         fun extract(section: String): Map<String, String> {
-            val key = "\"" + section + "\""
+            val key = "\"$section\""
             val start = json.indexOf(key)
             if (start < 0) return emptyMap()
             val brace = json.indexOf('{', start)
@@ -151,26 +160,90 @@ class SettingsActivity : AppCompatActivity() {
             }
             if (end < 0) return emptyMap()
             val body = json.substring(brace + 1, end)
+
+            // Split by commas at top level (naiv, reicht für unsere flache Map)
             val out = mutableMapOf<String, String>()
-            for (pair in body.split(',')) {
-                val idx = pair.indexOf(':')
+            var i = 0
+            var startItem = 0
+            var inQuotes = false
+            while (i < body.length) {
+                val c = body[i]
+                if (c == '"') inQuotes = !inQuotes
+                if (!inQuotes && (c == ',')) {
+                    val pair = body.substring(startItem, i)
+                    val idx = pair.indexOf(':')
+                    if (idx > 0) {
+                        val k = pair.substring(0, idx).trim().trim('"')
+                        val v = pair.substring(idx + 1).trim()
+                            .trim() // keep quotes or brackets for type detection
+                            .trim()
+                        out[k] = v.trim()
+                    }
+                    startItem = i + 1
+                }
+                i++
+            }
+            // last item
+            val last = body.substring(startItem).trim()
+            if (last.isNotEmpty()) {
+                val idx = last.indexOf(':')
                 if (idx > 0) {
-                    val k = pair.substring(0, idx).trim().trim('"')
-                    val v = pair.substring(idx + 1).trim().trim('"')
-                    out[k] = v
+                    val k = last.substring(0, idx).trim().trim('"')
+                    val v = last.substring(idx + 1).trim()
+                    out[k] = v.trim()
                 }
             }
             return out
         }
+
         val p1 = extract("prefs")
         val p2 = extract("pushpro_prefs")
 
+        fun EditorPutTyped(editor: android.content.SharedPreferences.Editor, k: String, raw: String) {
+            val v = raw.trim()
+
+            // StringSet: ["a","b",...]
+            if (v.startsWith("[") && v.endsWith("]")) {
+                val inner = v.substring(1, v.length - 1).trim()
+                val set = if (inner.isEmpty()) {
+                    emptySet<String>()
+                } else {
+                    // split top-level by comma, remove quotes
+                    inner.split(',').map { it.trim().trim('"') }.toSet()
+                }
+                editor.putStringSet(k, set)
+                return
+            }
+
+            // Boolean
+            if (v.equals("\"true\"", true) || v.equals("true", true)) {
+                editor.putBoolean(k, true); return
+            }
+            if (v.equals("\"false\"", true) || v.equals("false", true)) {
+                editor.putBoolean(k, false); return
+            }
+
+            // Int
+            val intClean = v.trim('"')
+            if (intClean.matches(Regex("^-?\\d+$"))) {
+                runCatching { intClean.toInt() }.onSuccess { editor.putInt(k, it); return }
+            }
+
+            // Float
+            if (intClean.matches(Regex("^-?\\d+\\.\\d+$"))) {
+                runCatching { intClean.toFloat() }.onSuccess { editor.putFloat(k, it); return }
+            }
+
+            // Fallback String (strip surrounding quotes if present)
+            editor.putString(k, intClean)
+        }
+
         val sp1 = getSharedPreferences("prefs", MODE_PRIVATE).edit()
-        for ((k, v) in p1) sp1.putString(k, v)
+        for ((k, v) in p1) EditorPutTyped(sp1, k, v)
         sp1.apply()
 
         val sp2 = getSharedPreferences("pushpro_prefs", MODE_PRIVATE).edit()
-        for ((k, v) in p2) sp2.putString(k, v)
+        for ((k, v) in p2) EditorPutTyped(sp2, k, v)
         sp2.apply()
     }
 }
