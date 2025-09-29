@@ -69,13 +69,23 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # Build Debug APK
+      # === Keystore aus Secrets wiederherstellen (für signierte Release-Builds) ===
+      - name: Restore keystore from secrets
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > app/pushpro-release.jks
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+      # Build Debug APK (unsigniert/Debug-Key – zum schnellen Testen)
       - name: Assemble Debug
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      # Build Release APK & AAB (unsiged, wenn keine Signier-Konfig)
+      # Build Release APK & AAB (signiert mit Keystore aus build.gradle)
       - name: Assemble Release (APK) & Bundle Release (AAB)
         run: ./gradlew assembleRelease bundleRelease --no-daemon --stacktrace
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS:         ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD:      ${{ secrets.ANDROID_KEY_PASSWORD }}
 
       # Artefakte hochladen
       - name: Upload Debug APK
@@ -88,9 +98,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
-          path: |
-            app/build/outputs/apk/release/app-release.apk
-            app/build/outputs/apk/release/app-release-unsigned.apk
+          path: app/build/outputs/apk/release/app-release.apk
 
       - name: Upload Release AAB
         uses: actions/upload-artifact@v4
