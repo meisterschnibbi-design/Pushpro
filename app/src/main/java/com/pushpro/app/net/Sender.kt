@@ -59,7 +59,7 @@ object Sender {
             .replace("{package}", pkg)
             .replace("{time}", time)
 
-    // ---------- Helpers for nicer text & package ----------
+    // ---------- Helpers ----------
     private fun cleanOneLine(s: String): String =
         s.replace("\\n", " ")
             .replace("\\r", " ")
@@ -72,7 +72,7 @@ object Sender {
     private fun compactMultiline(s: String): String =
         s.replace(Regex("(\\r?\\n){2,}"), "\n").trim()
 
-    // NEW: wandelt sichtbare Sequenzen (\n, \r, \t) in echte Steuerzeichen um
+    // wandelt sichtbare Sequenzen (\n, \r, \t) in echte Steuerzeichen um
     private fun unescapeUserEscapes(s: String): String =
         s.replace("\\n", "\n")
             .replace("\\r", "\r")
@@ -185,7 +185,6 @@ object Sender {
                 .distinct()
                 .forEach { one ->
                     thread {
-                        // packageForTpl = pkg (Absender-Paket anzeigen)
                         sendTelegram(
                             ctx, token, one, parseIdx, header,
                             "$cleanTitle\n$cleanText", pkg, disablePreview, silent, protect
@@ -196,7 +195,6 @@ object Sender {
     }
 
     // ----- Telegram -----
-    // packageForTpl steuert, welcher Paketname in {package} landet.
     private fun sendTelegram(
         ctx: Context,
         token: String,
@@ -220,7 +218,7 @@ object Sender {
             val title = headerPrefix?.takeIf { it.isNotBlank() } ?: ""
             val effectivePkg = normalizePkg(packageForTpl ?: ctx.packageName)
 
-            // Wichtig: sichtbare \n in echte Newlines wandeln, danach kompaktieren
+            // sichtbare \n → echte Zeilenumbrüche
             val rawMsg = resolveTpl(
                 if (tplStored.isNotBlank()) tplStored else tplDefault,
                 title,
@@ -255,15 +253,15 @@ object Sender {
                 val isTest = (text == "Test from PushPro")
                 LogUtil.append(
                     ctx,
-                    if (code in 200.299)
+                    if (code in 200..299)
                         if (isTest) "Telegram test OK" else "Telegram OK"
                     else
                         if (isTest) "Telegram test FAILED (code=$code)" else "Telegram FAILED (code=$code)"
                 )
             }
-            if (text == "Test from PushPro") toast(ctx, if (code in 200.299) "Telegram test OK" else "Telegram test failed")
+            if (text == "Test from PushPro") toast(ctx, if (code in 200..299) "Telegram test OK" else "Telegram test failed")
             ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE).edit()
-                .putBoolean("last_send_error_tg", code !in 200.299).apply()
+                .putBoolean("last_send_error_tg", code !in 200..299).apply()
             conn.disconnect()
         } catch (e: Throwable) {
             run {
@@ -314,7 +312,7 @@ object Sender {
             val finalBody = when (kind) {
                 "json" -> escapeJson(body)
                 "xml" -> escapeXml(body)
-                else -> unescapeUserEscapes(body) // auch hier sichtbare \n zu echten Newlines
+                else -> unescapeUserEscapes(body) // sichtbare \n → echte
             }
 
             val method = listOf("GET", "POST", "PUT", "DELETE").getOrElse(methodIndex) { "POST" }
@@ -333,7 +331,7 @@ object Sender {
             }
             val code = conn.responseCode
             try { BufferedReader(InputStreamReader(conn.inputStream)).readText() } catch (_: Throwable) {}
-            LogUtil.append(ctx, if (code in 200.299) "Webhook OK" else "Webhook FAILED (code=$code)")
+            LogUtil.append(ctx, if (code in 200..299) "Webhook OK" else "Webhook FAILED (code=$code)")
             conn.disconnect()
         } catch (e: Throwable) {
             LogUtil.append(ctx, "Webhook FAILED (${e.message ?: "error"})")
