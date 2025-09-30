@@ -23,34 +23,41 @@ class BlacklistActivity : AppCompatActivity() {
         val recycler = findViewById<RecyclerView>(R.id.recyclerApps)
         recycler.layoutManager = LinearLayoutManager(this)
 
-        // Aktuellen Blacklist-Stand laden (Kopie machen – getStringSet liefert Live-View!)
         val prefs = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
+        // Immer Kopie anlegen – getStringSet gibt eine live-View zurück
         val blocked = (prefs.getStringSet("blacklist_set", emptySet()) ?: emptySet()).toMutableSet()
 
-        // Apps laden: nur launchbare, keine System-Apps, nicht die eigene App
         val pm = packageManager
         val myPkg = packageName
+
+        // *** NEU: ALLE installierten Apps (User + System), keine Launcher-Filter ***
         val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
             .asSequence()
-            // nur Apps mit Launcher-Intent (sichtbare Apps)
-            .filter { pm.getLaunchIntentForPackage(it.packageName) != null }
-            // System-Apps ausblenden (entspricht eher "Apps" Liste, die viele Systemdienste versteckt)
-            .filter { (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 }
-            // Eigene App nicht listen
+            // Eigene App ausblenden (keinen Sinn, sich selbst zu blocken)
             .filter { it.packageName != myPkg }
             .map { ai ->
-                val name = runCatching { pm.getApplicationLabel(ai).toString() }.getOrDefault(ai.packageName)
+                val name = runCatching { pm.getApplicationLabel(ai).toString() }
+                    .getOrDefault(ai.packageName)
                 val icon = runCatching { pm.getApplicationIcon(ai) }.getOrNull()
-                AppItem(name = name, pkg = ai.packageName, icon = icon)
+                val isSystem = (ai.flags and ApplicationInfo.FLAG_SYSTEM) != 0 ||
+                               (ai.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+                AppItem(
+                    name = if (name.isBlank()) ai.packageName else name,
+                    pkg = ai.packageName,
+                    icon = icon,
+                    isSystem = isSystem
+                )
             }
             .distinctBy { it.pkg }
-            .sortedBy { it.name.lowercase() }
+            .sortedWith(
+                compareBy<AppItem> { it.isSystem }   // User-Apps zuerst, dann System
+                    .thenBy { it.name.lowercase() }
+            )
             .toList()
 
         adapter = AppsAdapter(apps, blocked) { pkg, shouldBlock ->
             val newSet = blocked.toMutableSet()
             if (shouldBlock) newSet.add(pkg) else newSet.remove(pkg)
-            // Immer eine neue Menge speichern (kein Live-View)
             prefs.edit().putStringSet("blacklist_set", newSet).apply()
             blocked.clear(); blocked.addAll(newSet)
         }
@@ -62,7 +69,8 @@ class BlacklistActivity : AppCompatActivity() {
 data class AppItem(
     val name: String,
     val pkg: String,
-    val icon: Drawable?
+    val icon: Drawable?,
+    val isSystem: Boolean
 )
 
 private class AppsAdapter(
@@ -87,7 +95,8 @@ private class AppsAdapter(
             name = app.name,
             pkg = app.pkg,
             ic = app.icon,
-            checked = blocked.contains(app.pkg)
+            checked = blocked.contains(app.pkg),
+            isSystem = app.isSystem
         ) { isChecked ->
             onToggle(app.pkg, isChecked)
         }
@@ -118,13 +127,14 @@ private class AppVH(private val root: android.widget.LinearLayout) : RecyclerVie
         pkg: String,
         ic: Drawable?,
         checked: Boolean,
+        isSystem: Boolean,
         onToggle: (Boolean) -> Unit
     ) {
         icon.setImageDrawable(ic ?: root.context.getDrawable(R.mipmap.ic_launcher))
         title.text = name
-        subtitle.text = pkg
+        subtitle.text = if (isSystem) "$pkg • System" else pkg
 
-        // Listener resetten → State setzen → Listener wieder setzen
+        // Listener resetten → State setzen → Listener wieder binden
         toggle.setOnCheckedChangeListener(null)
         toggle.isChecked = checked
         toggle.setOnCheckedChangeListener { _: CompoundButton, isChecked: Boolean ->
