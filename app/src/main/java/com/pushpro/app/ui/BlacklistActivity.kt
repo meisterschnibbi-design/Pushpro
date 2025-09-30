@@ -24,35 +24,38 @@ class BlacklistActivity : AppCompatActivity() {
         recycler.layoutManager = LinearLayoutManager(this)
 
         val prefs = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
-        // Immer Kopie anlegen – getStringSet gibt eine live-View zurück
+        // Immer Kopie anlegen – getStringSet liefert eine Live-View
         val blocked = (prefs.getStringSet("blacklist_set", emptySet()) ?: emptySet()).toMutableSet()
 
         val pm = packageManager
         val myPkg = packageName
 
-        // *** NEU: ALLE installierten Apps (User + System), keine Launcher-Filter ***
+        // Ziel: NUR „normale, installierte Apps“ wie in den Systemeinstellungen → Apps
+        // 1) Nur Apps mit Launcher-Entry (sichtbar für den Nutzer)
+        // 2) System-Apps ausblenden
+        // 3) Eigene App ausblenden
+        val launchables = pm.queryIntentActivities(
+            android.content.Intent(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_LAUNCHER),
+            0
+        ).map { it.activityInfo.applicationInfo.packageName }.toSet()
+
         val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
             .asSequence()
-            // Eigene App ausblenden (keinen Sinn, sich selbst zu blocken)
-            .filter { it.packageName != myPkg }
+            .filter { it.packageName != myPkg } // eigene App nicht anzeigen
+            .filter { launchables.contains(it.packageName) } // nur Apps mit Launcher
+            .filter {
+                val flags = it.flags
+                (flags and ApplicationInfo.FLAG_SYSTEM) == 0 &&
+                (flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0
+            } // System verstecken
             .map { ai ->
                 val name = runCatching { pm.getApplicationLabel(ai).toString() }
-                    .getOrDefault(ai.packageName)
+                    .getOrDefault(ai.packageName).ifBlank { ai.packageName }
                 val icon = runCatching { pm.getApplicationIcon(ai) }.getOrNull()
-                val isSystem = (ai.flags and ApplicationInfo.FLAG_SYSTEM) != 0 ||
-                               (ai.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
-                AppItem(
-                    name = if (name.isBlank()) ai.packageName else name,
-                    pkg = ai.packageName,
-                    icon = icon,
-                    isSystem = isSystem
-                )
+                AppItem(name = name, pkg = ai.packageName, icon = icon)
             }
             .distinctBy { it.pkg }
-            .sortedWith(
-                compareBy<AppItem> { it.isSystem }   // User-Apps zuerst, dann System
-                    .thenBy { it.name.lowercase() }
-            )
+            .sortedBy { it.name.lowercase() }
             .toList()
 
         adapter = AppsAdapter(apps, blocked) { pkg, shouldBlock ->
@@ -69,8 +72,7 @@ class BlacklistActivity : AppCompatActivity() {
 data class AppItem(
     val name: String,
     val pkg: String,
-    val icon: Drawable?,
-    val isSystem: Boolean
+    val icon: Drawable?
 )
 
 private class AppsAdapter(
@@ -95,8 +97,7 @@ private class AppsAdapter(
             name = app.name,
             pkg = app.pkg,
             ic = app.icon,
-            checked = blocked.contains(app.pkg),
-            isSystem = app.isSystem
+            checked = blocked.contains(app.pkg)
         ) { isChecked ->
             onToggle(app.pkg, isChecked)
         }
@@ -127,14 +128,13 @@ private class AppVH(private val root: android.widget.LinearLayout) : RecyclerVie
         pkg: String,
         ic: Drawable?,
         checked: Boolean,
-        isSystem: Boolean,
         onToggle: (Boolean) -> Unit
     ) {
         icon.setImageDrawable(ic ?: root.context.getDrawable(R.mipmap.ic_launcher))
         title.text = name
-        subtitle.text = if (isSystem) "$pkg • System" else pkg
+        subtitle.text = pkg
 
-        // Listener resetten → State setzen → Listener wieder binden
+        // Listener resetten → State setzen → Listener wieder setzen
         toggle.setOnCheckedChangeListener(null)
         toggle.isChecked = checked
         toggle.setOnCheckedChangeListener { _: CompoundButton, isChecked: Boolean ->

@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.pushpro">
+
+    <!-- Sichtbarkeit: alle Apps mit Launcher-Icon dürfen abgefragt werden (Android 11+) -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
 
     <uses-permission android:name="android.permission.INTERNET" />
-
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
@@ -12,7 +20,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/Theme.PushPro">
 
-        <!-- Activities (richtiger Pfad: com.pushpro.app.*) -->
+        <!-- Activities (com.pushpro.app.*) -->
         <activity android:name=".app.ui.OfflineQueueActivity" />
         <activity android:name=".app.ui.LogViewerActivity" />
         <activity android:name=".app.ui.SettingsActivity" />
@@ -22,6 +30,8 @@
         <activity
             android:name=".app.ui.DiagnosticsActivity"
             android:exported="false" />
+        <activity android:name=".app.ui.BlacklistActivity" />
+        <activity android:name=".app.ui.StatisticsActivity" />
 
         <!-- Launcher -->
         <activity
@@ -44,9 +54,6 @@
             </intent-filter>
         </service>
 
-            <activity android:name=".app.ui.BlacklistActivity" />
-        <activity android:name=".app.ui.StatisticsActivity" />
-
         <!-- Keep-Alive Foreground Service -->
         <service
             android:name="com.pushpro.app.service.ForegroundKeeperService"
@@ -63,9 +70,9 @@
             </intent-filter>
         </receiver>
 
-        <!-- Alarm/KeepAlive Receiver (invoked via PendingIntent) -->
+        <!-- Alarm/KeepAlive Receiver -->
         <receiver
             android:name="com.pushpro.app.KeepAliveReceiver"
             android:exported="false" />
-</application>
+    </application>
 </manifest>
