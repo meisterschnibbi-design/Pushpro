@@ -34,7 +34,7 @@ class NotificationRelayService : NotificationListenerService() {
 
             // 2) Ongoing/Foreground-Service ignorieren
             if ((n.flags and Notification.FLAG_ONGOING_EVENT) != 0 ||
-                (n.flags and 0x00000040) != 0 // FLAG_FOREGROUND_SERVICE ist nicht immer öffentlich
+                (n.flags and 0x00000040) != 0 // FLAG_FOREGROUND_SERVICE (nicht immer öffentlich)
             ) return
 
             // 3) Channel-Importance prüfen: nur sichtbare Notifications
@@ -44,7 +44,7 @@ class NotificationRelayService : NotificationListenerService() {
                 val imp = channel?.importance ?: NotificationManager.IMPORTANCE_DEFAULT
                 if (imp < NotificationManager.IMPORTANCE_DEFAULT) return
             } catch (_: Throwable) {
-                // falls kein Channel verfügbar → Default nehmen
+                // kein Channel → Default
             }
 
             // 4) Titel/Text robust extrahieren
@@ -70,9 +70,13 @@ class NotificationRelayService : NotificationListenerService() {
         LogUtil.append(this, "Notification listener disconnected – rebind issued")
     }
 
+    // --- Hilfen ---
+
     private fun normalizePkg(pkg: String): String {
-        return pkg.replace(Regex("\.clone(\d+)\.clone\1$"), ".clone$1")
+        // Fix: Backslashes im Regex doppelt escapen
+        return pkg.replace(Regex("\\.clone(\\d+)\\.clone\\1$"), ".clone$1")
     }
+
     private fun isBlockedPackage(rawPkg: String): Boolean {
         val prefs = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
         val blocked = prefs.getStringSet("blacklist_set", emptySet()) ?: emptySet()
@@ -89,8 +93,6 @@ class NotificationRelayService : NotificationListenerService() {
             }
         }
     }
-
-    // --- Hilfen ---
 
     private fun extractTitleText(extras: Bundle?): Pair<String, String> {
         if (extras == null) return "" to ""
