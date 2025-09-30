@@ -91,7 +91,6 @@ object EmailSender {
             }
 
             fun readEhlo(r: BufferedReader) {
-                // Erste Zeile muss 250 sein; ggf. 250-Feature-Liste, bis finale 250 <OK>
                 var line = readLine(r)
                 if (!line.startsWith("250")) throw RuntimeException("EHLO not accepted: $line")
                 while (line.startsWith("250-")) line = readLine(r)
@@ -99,7 +98,6 @@ object EmailSender {
             }
 
             var (sock, r, w) = if (tlsMode == 2) {
-                // SMTPS (SSL/TLS)
                 val factory = SSLSocketFactory.getDefault() as SSLSocketFactory
                 val ssl = factory.createSocket(host, port) as SSLSocket
                 ssl.soTimeout = 10000
@@ -129,11 +127,11 @@ object EmailSender {
             // AUTH LOGIN (falls user gesetzt)
             if (user.isNotBlank()) {
                 send(w, "AUTH LOGIN")
-                readExpect(r, "334") // username?
+                readExpect(r, "334")
                 send(w, Base64.encodeToString(user.toByteArray(Charsets.UTF_8), Base64.NO_WRAP))
-                readExpect(r, "334") // password?
+                readExpect(r, "334")
                 send(w, Base64.encodeToString(pass.toByteArray(Charsets.UTF_8), Base64.NO_WRAP))
-                readExpect(r, "235") // authenticated
+                readExpect(r, "235")
             }
 
             val from = if (user.isNotBlank()) user else "noreply@pushpro"
