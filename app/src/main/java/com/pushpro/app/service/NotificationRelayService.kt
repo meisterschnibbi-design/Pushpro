@@ -29,13 +29,13 @@ class NotificationRelayService : NotificationListenerService() {
                 return
             }
 
-            // *** NEU: Stabile De-Dup-Prüfung (pkg|id|tag, postTime aufsteigend) ***
+            // *** Stabile De-Dup-Prüfung (pkg|id|tag, postTime aufsteigend) ***
             val stableKey = makeStableKey(sbn, pkg)
             if (isReplayOrDuplicate(stableKey, sbn.postTime)) {
                 LogUtil.append(this, "Suppressed duplicate/replay: $pkg")
                 return
             }
-            // *********************************************************************
+            // ******************************************************************
 
             // 1) Group Summary ignorieren
             if ((n.flags and Notification.FLAG_GROUP_SUMMARY) != 0) return
@@ -73,12 +73,12 @@ class NotificationRelayService : NotificationListenerService() {
     }
 
     override fun onListenerConnected() {
-        connectedAt = System.currentTimeMillis()   // (bleibt bestehen; hat keine Filterwirkung mehr)
+        connectedAt = System.currentTimeMillis()   // bleibt nur informativ
         LogUtil.append(this, "Notification listener connected")
     }
 
     override fun onListenerDisconnected() {
-        ensureBound(this) // nur hier bei echtem Disconnect neu binden
+        ensureBound(this) // nur bei echtem Disconnect neu binden
         LogUtil.append(this, "Notification listener disconnected – rebind issued")
     }
 
@@ -152,11 +152,15 @@ class NotificationRelayService : NotificationListenerService() {
     private fun markSent(stableKey: String, postTime: Long) {
         synchronized(lastPostTimes) {
             lastPostTimes[stableKey] = postTime
-            // Housekeeping: Größe begrenzen
+            // Housekeeping: Größe begrenzen (Iterator-Name NICHT "it" nennen!)
             if (lastPostTimes.size > 2048) {
-                // einfache Ausdünnung (kein LRU nötig hier)
-                val it = lastPostTimes.entries.iterator()
-                repeat(256) { if (it.hasNext()) it.next(); if (it.hasNext()) it.remove() }
+                val iter = lastPostTimes.entries.iterator()
+                var removed = 0
+                while (iter.hasNext() && removed < 256) {
+                    iter.next()
+                    iter.remove()
+                    removed++
+                }
             }
         }
     }
@@ -164,7 +168,7 @@ class NotificationRelayService : NotificationListenerService() {
 
     companion object {
         private const val WINDOW_MS = 2500L
-        @Volatile private var connectedAt: Long = 0L  // bleibt, wird aber nicht mehr zum Filtern benutzt
+        @Volatile private var connectedAt: Long = 0L  // informativ
 
         private val recent = Collections.synchronizedMap(
             object : LinkedHashMap<String, Long>(256, 0.75f, true) {
@@ -174,7 +178,7 @@ class NotificationRelayService : NotificationListenerService() {
             }
         )
 
-        // NEU: merkt letzte weitergeleitete postTime pro (pkg|id|tag)
+        // merkt letzte weitergeleitete postTime pro (pkg|id|tag)
         private val lastPostTimes = HashMap<String, Long>(512)
 
         private fun isDuplicate(key: String): Boolean {
