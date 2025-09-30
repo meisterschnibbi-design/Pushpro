@@ -29,13 +29,13 @@ class NotificationRelayService : NotificationListenerService() {
                 return
             }
 
-            // *** Reconnect-Guard: nur Replays verwerfen (immer weiterleiten im Normalbetrieb) ***
-            if (connectedAt > 0 && sbn.postTime < connectedAt) {
-                // Dies sind vom System erneut gelieferte (ältere) Benachrichtigungen direkt nach Connect
-                LogUtil.append(this, "Ignored replay after rebind: $pkg")
+            // *** NEU: Stabile De-Dup-Prüfung (pkg|id|tag, postTime aufsteigend) ***
+            val stableKey = makeStableKey(sbn, pkg)
+            if (isReplayOrDuplicate(stableKey, sbn.postTime)) {
+                LogUtil.append(this, "Suppressed duplicate/replay: $pkg")
                 return
             }
-            // **************************************************************************************
+            // *********************************************************************
 
             // 1) Group Summary ignorieren
             if ((n.flags and Notification.FLAG_GROUP_SUMMARY) != 0) return
@@ -58,9 +58,12 @@ class NotificationRelayService : NotificationListenerService() {
             // 4) Titel/Text robust extrahieren
             val (title, text) = extractTitleText(n.extras)
 
-            // 5) Debounce (unverändert)
+            // 5) (bestehendes) kurzes Debounce-Fenster
             val key = buildDedupKey(sbn, pkg, title, text)
             if (isDuplicate(key)) return
+
+            // Stable-Key als "gesendet" markieren (mit dieser postTime)
+            markSent(stableKey, sbn.postTime)
 
             LogUtil.append(this, "Got push: pkg=$pkg; title=$title")
             Sender.forward(this, title, text, pkg)
@@ -70,7 +73,7 @@ class NotificationRelayService : NotificationListenerService() {
     }
 
     override fun onListenerConnected() {
-        connectedAt = System.currentTimeMillis()   // Zeit der aktuellen Verbindung merken
+        connectedAt = System.currentTimeMillis()   // (bleibt bestehen; hat keine Filterwirkung mehr)
         LogUtil.append(this, "Notification listener connected")
     }
 
@@ -133,9 +136,35 @@ class NotificationRelayService : NotificationListenerService() {
         return "${sbn.key}|$pkg|$title|$shortText"
     }
 
+    // --- NEU: stabile De-Dup-Hilfen ---
+    private fun makeStableKey(sbn: StatusBarNotification, pkg: String): String {
+        val tag = sbn.tag ?: ""
+        return "$pkg|${sbn.id}|$tag"
+    }
+
+    private fun isReplayOrDuplicate(stableKey: String, postTime: Long): Boolean {
+        synchronized(lastPostTimes) {
+            val last = lastPostTimes[stableKey]
+            return last != null && postTime <= last
+        }
+    }
+
+    private fun markSent(stableKey: String, postTime: Long) {
+        synchronized(lastPostTimes) {
+            lastPostTimes[stableKey] = postTime
+            // Housekeeping: Größe begrenzen
+            if (lastPostTimes.size > 2048) {
+                // einfache Ausdünnung (kein LRU nötig hier)
+                val it = lastPostTimes.entries.iterator()
+                repeat(256) { if (it.hasNext()) it.next(); if (it.hasNext()) it.remove() }
+            }
+        }
+    }
+    // -------------------------------
+
     companion object {
         private const val WINDOW_MS = 2500L
-        @Volatile private var connectedAt: Long = 0L
+        @Volatile private var connectedAt: Long = 0L  // bleibt, wird aber nicht mehr zum Filtern benutzt
 
         private val recent = Collections.synchronizedMap(
             object : LinkedHashMap<String, Long>(256, 0.75f, true) {
@@ -144,6 +173,9 @@ class NotificationRelayService : NotificationListenerService() {
                 }
             }
         )
+
+        // NEU: merkt letzte weitergeleitete postTime pro (pkg|id|tag)
+        private val lastPostTimes = HashMap<String, Long>(512)
 
         private fun isDuplicate(key: String): Boolean {
             val now = System.currentTimeMillis()
