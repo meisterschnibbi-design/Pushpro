@@ -1,8 +1,6 @@
 package com.pushpro.app.net
 
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
@@ -37,7 +35,7 @@ object EmailSender {
 
                 val session = Session.getInstance(props, object : Authenticator() {
                     override fun getPasswordAuthentication(): PasswordAuthentication {
-                        // TODO: deine gespeicherten Zugangsdaten holen
+                        // TODO: Zugangsdaten einfügen oder aus Settings laden
                         return PasswordAuthentication("user@example.com", "password")
                     }
                 })
@@ -52,10 +50,10 @@ object EmailSender {
                 Transport.send(message)
 
                 LogUtil.append(ctx, "Email test OK")
-                toast(ctx, "Email test OK")   // <<< NEU
+                toast(ctx, "Email test OK")   // <<< Toast hinzugefügt
             } catch (e: Exception) {
                 LogUtil.append(ctx, "Email test FAILED (${e.message ?: "error"})")
-                toast(ctx, "Email test failed")   // <<< NEU
+                toast(ctx, "Email test failed")   // <<< Toast hinzugefügt
             }
         }
     }
@@ -72,7 +70,6 @@ object EmailSender {
 
                 val session = Session.getInstance(props, object : Authenticator() {
                     override fun getPasswordAuthentication(): PasswordAuthentication {
-                        // TODO: deine gespeicherten Zugangsdaten holen
                         return PasswordAuthentication("user@example.com", "password")
                     }
                 })
