@@ -95,9 +95,11 @@ object Sender {
             .distinct()
             .forEach { one ->
                 thread {
+                    // Nur Änderung: isTest = true, damit Toast gezeigt wird
                     sendWebhook(
                         ctx, one, methodIndex, templateIndex, headersJson,
-                        "PushPro Test", "It works", ctx.packageName
+                        "PushPro Test", "It works", ctx.packageName,
+                        isTest = true
                     )
                 }
             }
@@ -162,7 +164,12 @@ object Sender {
                 .filter { it.isNotEmpty() }
                 .distinct()
                 .forEach { one ->
-                    thread { sendWebhook(ctx, one, methodIdx, tplIdx, headers, cleanTitle, cleanText, pkg) }
+                    thread {
+                        sendWebhook(
+                            ctx, one, methodIdx, tplIdx, headers, cleanTitle, cleanText, pkg
+                            // isTest default = false
+                        )
+                    }
                 }
         }
 
@@ -287,7 +294,8 @@ object Sender {
         headersJson: String?,
         title: String,
         text: String,
-        pkg: String
+        pkg: String,
+        isTest: Boolean = false   // <— nur hinzugefügt für Toast beim Test
     ) {
         try {
             val kinds = listOf("json", "form", "plain", "xml")
@@ -332,9 +340,16 @@ object Sender {
             val code = conn.responseCode
             try { BufferedReader(InputStreamReader(conn.inputStream)).readText() } catch (_: Throwable) {}
             LogUtil.append(ctx, if (code in 200..299) "Webhook OK" else "Webhook FAILED (code=$code)")
+
+            // Nur hinzugefügt: Toast beim Test-Aufruf
+            if (isTest) {
+                toast(ctx, if (code in 200..299) "Webhook test OK" else "Webhook test failed")
+            }
+
             conn.disconnect()
         } catch (e: Throwable) {
             LogUtil.append(ctx, "Webhook FAILED (${e.message ?: "error"})")
+            if (isTest) toast(ctx, "Webhook test failed")
         }
     }
 
