@@ -1,6 +1,7 @@
 package com.pushpro.app.service
 
 import android.app.Notification
+import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
@@ -19,25 +20,33 @@ class NotificationRelayService : NotificationListenerService() {
             if (sbn == null) return
             val n = sbn.notification ?: return
 
-            // 1) Eigene App ignorieren
             val pkg = sbn.packageName ?: ""
             if (pkg == packageName) return
 
-            // 2) Group Summary ignorieren (verursacht häufig Doppel-Events)
-            if ((n.flags and Notification.FLAG_GROUP_SUMMARY) != 0) {
-                return
+            // 1) Group Summary ignorieren
+            if ((n.flags and Notification.FLAG_GROUP_SUMMARY) != 0) return
+
+            // 2) Ongoing/Foreground-Service ignorieren
+            if ((n.flags and Notification.FLAG_ONGOING_EVENT) != 0 ||
+                (n.flags and 0x00000040) != 0 // FLAG_FOREGROUND_SERVICE ist nicht immer öffentlich
+            ) return
+
+            // 3) Channel-Importance prüfen: nur sichtbare Notifications
+            try {
+                val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                val channel = n.channelId?.let { nm.getNotificationChannel(it) }
+                val imp = channel?.importance ?: NotificationManager.IMPORTANCE_DEFAULT
+                if (imp < NotificationManager.IMPORTANCE_DEFAULT) return
+            } catch (_: Throwable) {
+                // falls kein Channel verfügbar → Default nehmen
             }
 
-            // 3) Titel/Text robust extrahieren
+            // 4) Titel/Text robust extrahieren
             val (title, text) = extractTitleText(n.extras)
 
-            // 4) Debounce: gleiches Event (innerhalb kurzer Zeit) nur 1x weiterleiten
+            // 5) Debounce
             val key = buildDedupKey(sbn, pkg, title, text)
-            if (isDuplicate(key)) {
-                // Optionales Debug-Log:
-                // LogUtil.append(this, "Dedup suppressed: pkg=$pkg; title=$title")
-                return
-            }
+            if (isDuplicate(key)) return
 
             LogUtil.append(this, "Got push: pkg=$pkg; title=$title")
             Sender.forward(this, title, text, pkg)
@@ -51,7 +60,6 @@ class NotificationRelayService : NotificationListenerService() {
     }
 
     override fun onListenerDisconnected() {
-        // Einige OEMs trennen willkürlich – Toggle erzwingt Rebind
         ensureBound(this)
         LogUtil.append(this, "Notification listener disconnected – rebind issued")
     }
@@ -62,7 +70,6 @@ class NotificationRelayService : NotificationListenerService() {
         if (extras == null) return "" to ""
         val title = (extras.getCharSequence(Notification.EXTRA_TITLE) ?: "").toString()
 
-        // Reihenfolge: BIG_TEXT > TEXT_LINES (zusammengezogen) > TEXT > SUB_TEXT
         val big = (extras.getCharSequence(Notification.EXTRA_BIG_TEXT) ?: "").toString()
         if (big.isNotBlank()) return title to big
 
@@ -85,20 +92,15 @@ class NotificationRelayService : NotificationListenerService() {
         title: String,
         text: String
     ): String {
-        // sbn.key ist systemseitig schon ziemlich eindeutig;
-        // zur Sicherheit Paket + kurzer Text-Hash mitnehmen.
         val shortText = if (text.length > 64) text.substring(0, 64) else text
         return "${sbn.key}|$pkg|$title|$shortText"
     }
 
     companion object {
-        // Kurzes Zeitfenster für Debounce (z. B. Post+Update / Child+Summary)
         private const val WINDOW_MS = 2500L
-        // Kleiner LRU-Cache für kürzlich gesehene Events
         private val recent = Collections.synchronizedMap(
             object : LinkedHashMap<String, Long>(256, 0.75f, true) {
                 override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Long>?): Boolean {
-                    // Größe begrenzen
                     return this.size > 256
                 }
             }
@@ -108,15 +110,12 @@ class NotificationRelayService : NotificationListenerService() {
             val now = System.currentTimeMillis()
             synchronized(recent) {
                 val last = recent[key]
-                // Altlasten wegräumen
                 val it = recent.entries.iterator()
                 while (it.hasNext()) {
                     val e = it.next()
                     if (now - e.value > WINDOW_MS * 4) it.remove()
                 }
-                if (last != null && now - last < WINDOW_MS) {
-                    return true
-                }
+                if (last != null && now - last < WINDOW_MS) return true
                 recent[key] = now
             }
             return false
