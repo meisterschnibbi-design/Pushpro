@@ -20,32 +20,13 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings_menu)
 
-        // --- Open Access (nur diese Stelle geändert) ---
+        // --- Open Access: nur die Listener-Seite öffnen ---
         findViewById<MaterialButton>(R.id.btnOpenAccess).setOnClickListener {
-            // 1) Seite "Benachrichtigungszugriff" (Notification Listener)
             try {
                 startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
             } catch (_: Exception) { /* ignore */ }
-
-            // 2) App-Benachrichtigungseinstellungen mit vollen Extras (MIUI/Hersteller)
-            try {
-                val i = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                    putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
-                    putExtra("android.provider.extra.APP_PACKAGE", packageName)
-                    putExtra("app_package", packageName)
-                    putExtra("app_uid", applicationInfo?.uid ?: 0)
-                }
-                startActivity(i)
-            } catch (_: Exception) {
-                // 3) Fallback: App-Detailseite
-                try {
-                    startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                        data = Uri.parse("package:$packageName")
-                    })
-                } catch (_: Exception) { /* ignore */ }
-            }
         }
-        // --- Ende der Änderung ---
+        // ---------------------------------------------------
 
         findViewById<MaterialButton>(R.id.btnBatterySettings).setOnClickListener {
             startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
@@ -62,9 +43,7 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.btnResetSettings).setOnClickListener {
             val px = getSharedPreferences("prefs", MODE_PRIVATE)
             val pp = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
-            px.edit()
-                .clear()
-                .apply()
+            px.edit().clear().apply()
             pp.edit()
                 .putBoolean("global_enabled", false)
                 .putBoolean("webhook_enabled", false)
@@ -76,7 +55,6 @@ class SettingsActivity : AppCompatActivity() {
             Toast.makeText(this, "All settings & templates reset", Toast.LENGTH_SHORT).show()
         }
 
-        // New: Blacklist & Statistics
         findViewById<MaterialButton>(R.id.btnBlacklist)?.setOnClickListener {
             startActivity(Intent(this, BlacklistActivity::class.java))
         }
@@ -159,7 +137,6 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun importAllFromJson(json: String) {
-        // very simple parser expecting {"prefs": {...}, "pushpro_prefs": {...}}
         fun extract(section: String): Map<String, String> {
             val key = "\"$section\""
             val start = json.indexOf(key)
@@ -176,8 +153,6 @@ class SettingsActivity : AppCompatActivity() {
             }
             if (end < 0) return emptyMap()
             val body = json.substring(brace + 1, end)
-
-            // Split by commas at top level (naiv, reicht für unsere flache Map)
             val out = mutableMapOf<String, String>()
             var i = 0
             var startItem = 0
@@ -190,16 +165,13 @@ class SettingsActivity : AppCompatActivity() {
                     val idx = pair.indexOf(':')
                     if (idx > 0) {
                         val k = pair.substring(0, idx).trim().trim('"')
-                        val v = pair.substring(idx + 1).trim()
-                            .trim() // keep quotes or brackets for type detection
-                            .trim()
+                        val v = pair.substring(idx + 1).trim().trim()
                         out[k] = v.trim()
                     }
                     startItem = i + 1
                 }
                 i++
             }
-            // last item
             val last = body.substring(startItem).trim()
             if (last.isNotEmpty()) {
                 val idx = last.indexOf(':')
@@ -217,49 +189,26 @@ class SettingsActivity : AppCompatActivity() {
 
         fun EditorPutTyped(editor: android.content.SharedPreferences.Editor, k: String, raw: String) {
             val v = raw.trim()
-
-            // StringSet: ["a","b",...]
             if (v.startsWith("[") && v.endsWith("]")) {
                 val inner = v.substring(1, v.length - 1).trim()
-                val set = if (inner.isEmpty()) {
-                    emptySet<String>()
-                } else {
-                    // split top-level by comma, remove quotes
-                    inner.split(',').map { it.trim().trim('"') }.toSet()
-                }
-                editor.putStringSet(k, set)
-                return
+                val set = if (inner.isEmpty()) emptySet<String>()
+                else inner.split(',').map { it.trim().trim('"') }.toSet()
+                editor.putStringSet(k, set); return
             }
+            if (v.equals("\"true\"", true) || v.equals("true", true)) { editor.putBoolean(k, true); return }
+            if (v.equals("\"false\"", true) || v.equals("false", true)) { editor.putBoolean(k, false); return }
 
-            // Boolean
-            if (v.equals("\"true\"", true) || v.equals("true", true)) {
-                editor.putBoolean(k, true); return
-            }
-            if (v.equals("\"false\"", true) || v.equals("false", true)) {
-                editor.putBoolean(k, false); return
-            }
-
-            // Int
             val intClean = v.trim('"')
-            if (intClean.matches(Regex("^-?\\d+$"))) {
-                runCatching { intClean.toInt() }.onSuccess { editor.putInt(k, it); return }
-            }
+            if (intClean.matches(Regex("^-?\\d+$"))) { runCatching { intClean.toInt() }.onSuccess { editor.putInt(k, it); return } }
+            if (intClean.matches(Regex("^-?\\d+\\.\\d+$"))) { runCatching { intClean.toFloat() }.onSuccess { editor.putFloat(k, it); return } }
 
-            // Float
-            if (intClean.matches(Regex("^-?\\d+\\.\\d+$"))) {
-                runCatching { intClean.toFloat() }.onSuccess { editor.putFloat(k, it); return }
-            }
-
-            // Fallback String (strip surrounding quotes if present)
             editor.putString(k, intClean)
         }
 
         val sp1 = getSharedPreferences("prefs", MODE_PRIVATE).edit()
-        for ((k, v) in p1) EditorPutTyped(sp1, k, v)
-        sp1.apply()
+        for ((k, v) in p1) EditorPutTyped(sp1, k, v); sp1.apply()
 
         val sp2 = getSharedPreferences("pushpro_prefs", MODE_PRIVATE).edit()
-        for ((k, v) in p2) EditorPutTyped(sp2, k, v)
-        sp2.apply()
+        for ((k, v) in p2) EditorPutTyped(sp2, k, v); sp2.apply()
     }
 }
