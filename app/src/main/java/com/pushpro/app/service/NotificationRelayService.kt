@@ -23,14 +23,10 @@ class NotificationRelayService : NotificationListenerService() {
             val pkg = sbn.packageName ?: ""
             if (pkg == packageName) return
 
-            // Blacklist (sicherstellen, dass blockierte Pakete gar nicht erst geforwardet werden)
-            run {
-                val prefs = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
-                val blocked = prefs.getStringSet("blacklist_set", emptySet()) ?: emptySet()
-                if (blocked.contains(pkg)) {
-                    LogUtil.append(this, "Blocked by blacklist: $pkg")
-                    return
-                }
+            // Blacklist
+            if (isBlockedPackage(pkg)) {
+                LogUtil.append(this, "Blocked by blacklist: $pkg")
+                return
             }
 
             // 1) Group Summary ignorieren
@@ -38,7 +34,7 @@ class NotificationRelayService : NotificationListenerService() {
 
             // 2) Ongoing/Foreground-Service ignorieren
             if ((n.flags and Notification.FLAG_ONGOING_EVENT) != 0 ||
-                (n.flags and 0x00000040) != 0 // FLAG_FOREGROUND_SERVICE (nicht immer öffentlich)
+                (n.flags and 0x00000040) != 0 // FLAG_FOREGROUND_SERVICE ist nicht immer öffentlich
             ) return
 
             // 3) Channel-Importance prüfen: nur sichtbare Notifications
@@ -48,7 +44,7 @@ class NotificationRelayService : NotificationListenerService() {
                 val imp = channel?.importance ?: NotificationManager.IMPORTANCE_DEFAULT
                 if (imp < NotificationManager.IMPORTANCE_DEFAULT) return
             } catch (_: Throwable) {
-                // kein Channel → Default
+                // falls kein Channel verfügbar → Default nehmen
             }
 
             // 4) Titel/Text robust extrahieren
@@ -72,6 +68,26 @@ class NotificationRelayService : NotificationListenerService() {
     override fun onListenerDisconnected() {
         ensureBound(this)
         LogUtil.append(this, "Notification listener disconnected – rebind issued")
+    }
+
+    private fun normalizePkg(pkg: String): String {
+        return pkg.replace(Regex("\.clone(\d+)\.clone\1$"), ".clone$1")
+    }
+    private fun isBlockedPackage(rawPkg: String): Boolean {
+        val prefs = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
+        val blocked = prefs.getStringSet("blacklist_set", emptySet()) ?: emptySet()
+        if (blocked.isEmpty()) return false
+        val norm = normalizePkg(rawPkg)
+        return blocked.any { rule ->
+            when {
+                rule == rawPkg || rule == norm -> true
+                rule.endsWith(".*") -> {
+                    val pref = rule.removeSuffix(".*")
+                    rawPkg.startsWith(pref) || norm.startsWith(pref)
+                }
+                else -> false
+            }
+        }
     }
 
     // --- Hilfen ---

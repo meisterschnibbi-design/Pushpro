@@ -44,17 +44,22 @@ object Sender {
     }
 
     private fun resolveTpl(tpl: String, title: String, text: String, pkg: String, time: String): String =
-        tpl.replace("{title}", title).replace("{text}", text).replace("{package}", pkg).replace("{time}", time)
 
-    // ---------- Helpers für „schöne“ Texte ----------
+    // ---------- Helpers for nicer text & package ----------
     private fun cleanOneLine(s: String): String =
-        s.replace("\r", " ").replace("\n", " ").replace(Regex("\\s+"), " ").trim()
+        s.replace("\\n", " ").replace("\\r", " ").replace("\\t", " ").replace("\r", " ").replace("\n", " ").replace(Regex("\s+"), " ").trim()
 
     private fun compactMultiline(s: String): String =
-        s.replace(Regex("(\\r?\\n){2,}"), "\n").trim()
+        s.replace(Regex("(\r?\n){2,}"), "\n").trim()
+
+    private fun normalizePkg(pkg: String): String =
+        pkg.replace(Regex("\.clone(\d+)\.clone\1$"), ".clone$1")
+
+        tpl.replace("{title}", title).replace("{text}", text).replace("{package}", pkg).replace("{time}", time)
 
     // Public tests
     fun sendWebhookTest(ctx: Context, url: String, methodIndex: Int, templateIndex: Int, headersJson: String?) {
+        // Mehrere Webhook-URLs unterstützen (Komma / Strichpunkt / Whitespace / Zeilenumbruch)
         url.split(Regex("""[,;\s]+"""))
             .map { it.trim() }
             .filter { it.isNotEmpty() }
@@ -65,37 +70,41 @@ object Sender {
     }
 
     fun sendTelegramTest(ctx: Context, token: String, chatId: String, parseModeIdx: Int, headerPrefix: String?, disablePreview: Boolean, silent: Boolean, protect: Boolean) {
+        // Mehrere Chat-IDs unterstützen (Komma / Strichpunkt / Whitespace)
         chatId.split(Regex("""[,;\s]+"""))
             .map { it.trim() }
             .filter { it.isNotEmpty() }
             .distinct()
             .forEach { one ->
+                // Test: packageForTpl = null -> fällt auf ctx.packageName (com.pushpro) zurück
                 thread { sendTelegram(ctx, token, one, parseModeIdx, headerPrefix, "Test from PushPro", null, disablePreview, silent, protect) }
             }
     }
 
     // Forward real pushes
     fun forward(ctx: Context, title: String, text: String, pkg: String) {
+        val cleanTitle = cleanOneLine(title)
+        val cleanText  = cleanOneLine(text)
+        // Gate: Hauptschalter global_enabled
         val pStatus = ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE)
-        if (!pStatus.getBoolean("global_enabled", false)) return
+        if (!pStatus.getBoolean("global_enabled", false)) {
+            // Hauptschalter ist aus -> keine echten Pushes
+            return
+        }
 
         val p = ctx.getSharedPreferences("prefs", Context.MODE_PRIVATE)
 
-        // Global blacklist check (zusätzliche Sicherheit)
+        // Global blacklist check
         run {
             val b = ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE)
             val blocked = b.getStringSet("blacklist_set", emptySet()) ?: emptySet()
             if (blocked.contains(pkg)) {
-                LogUtil.append(ctx, "Blocked by blacklist: $pkg")
+                com.pushpro.app.util.LogUtil.append(ctx, "Blocked by blacklist: $pkg")
                 return
             }
         }
 
-        // Titel/Text hübsch machen (keine \n/Mehrfach-Spaces)
-        val cleanTitle = cleanOneLine(title)
-        val cleanText  = cleanOneLine(text)
-
-        // EMAIL
+        // EMAIL: echte Weiterleitung (Test bleibt separat)
         if (p.getBoolean("email_enabled", false) &&
             allowByWhitelist(p.getString("email_input_whitelist", ""), cleanTitle, cleanText, pkg) &&
             matchContains(p.getString("email_input_contains", ""), cleanTitle, cleanText, pkg)
@@ -104,15 +113,16 @@ object Sender {
             val port   = p.getString("email_input_port", "") ?: ""
             val user   = p.getString("email_input_user", "") ?: ""
             val pass   = p.getString("email_input_pass", "") ?: ""
-            val tls    = p.getInt("email_input_tls_mode", 1)
+            val tls    = p.getInt("email_input_tls_mode", 1) // 0=None, 1=STARTTLS, 2=SSL/TLS
             val to     = p.getString("email_input_recipient", "") ?: ""
             val prefix = p.getString("email_input_subject_prefix", "") ?: ""
             val subject = (if (prefix.isNotBlank()) "$prefix " else "") + cleanTitle
             val body = buildString {
                 append(cleanText).append('\n')
-                append(pkg).append('\n')
+                append(normalizePkg(pkg)).append('\n')
                 append(sdf.format(Date()))
             }
+            // >>> Mehrere Empfänger unterstützen (Komma / Strichpunkt / Whitespace)
             to.split(Regex("""[,;\s]+"""))
                 .map { it.trim() }
                 .filter { it.isNotEmpty() }
@@ -122,7 +132,7 @@ object Sender {
                 }
         }
 
-        // WEBHOOK
+        // WEBHOOK: templates + filters
         if (p.getBoolean("wh_enabled", false) &&
             allowByWhitelist(p.getString("wh_whitelist", ""), cleanTitle, cleanText, pkg) &&
             matchContains(p.getString("wh_contains", ""), cleanTitle, cleanText, pkg)) {
@@ -130,6 +140,7 @@ object Sender {
             val methodIdx = p.getInt("wh_method", 1)
             val tplIdx = p.getInt("wh_template", 0)
             val headers = p.getString("wh_headers", "")
+            // >>> Mehrere URLs unterstützen (Komma / Strichpunkt / Whitespace / Zeilenumbruch)
             url.split(Regex("""[,;\s]+"""))
                 .map { it.trim() }
                 .filter { it.isNotEmpty() }
@@ -139,7 +150,7 @@ object Sender {
                 }
         }
 
-        // TELEGRAM
+        // TELEGRAM: template + filters
         if (p.getBoolean("tg_enabled", false) &&
             allowByWhitelist(p.getString("tg_whitelist", ""), cleanTitle, cleanText, pkg) &&
             matchContains(p.getString("tg_contains", ""), cleanTitle, cleanText, pkg)) {
@@ -150,12 +161,13 @@ object Sender {
             val disablePreview = p.getBoolean("tg_disable_preview", false)
             val silent = p.getBoolean("tg_silent", false)
             val protect = p.getBoolean("tg_protect", false)
+            // >>> Mehrere Chat-IDs unterstützen (Komma / Strichpunkt / Whitespace)
             chatId.split(Regex("""[,;\s]+"""))
                 .map { it.trim() }
                 .filter { it.isNotEmpty() }
                 .distinct()
                 .forEach { one ->
-                    // packageForTpl = pkg (Absender-Paket); Text vorher gereinigt
+                    // Real: packageForTpl = pkg (Absender-Paket anzeigen)
                     thread { sendTelegram(ctx, token, one, parseIdx, header, "$cleanTitle\n$cleanText", pkg, disablePreview, silent, protect) }
                 }
         }
@@ -175,7 +187,7 @@ object Sender {
                 "plain" -> "{title}\n{text}\n{package}\n{time}"
                 else    -> """<push><title>{title}</title><text>{text}</text><package>{package}</package><time>{time}</time></push>"""
             }
-            val body = resolveTpl(if (stored.isNotBlank()) stored else defaultBody, title, text, pkg, now)
+            val body = resolveTpl(if (stored.isNotBlank()) stored else defaultBody, title, text, normalizePkg(pkg), now)
 
             val method = listOf("GET","POST","PUT","PATCH").getOrElse(methodIndex) { "POST" }
             val contentType = when (kind) {
@@ -212,6 +224,8 @@ object Sender {
         }
     }
 
+    // NOTE: packageForTpl steuert, welcher Paketname in {package} landet.
+    // null -> ctx.packageName (com.pushpro), sonst der übergebene (z. B. Absender-Paket bei Real-Forward)
     private fun sendTelegram(
         ctx: Context,
         token: String,
@@ -233,10 +247,8 @@ object Sender {
             val tplDefault = "{title}\n{text}\n{package}\n{time}"
             val now = sdf.format(Date())
             val title = headerPrefix?.takeIf { it.isNotBlank() } ?: ""
-            val effectivePkg = packageForTpl ?: ctx.packageName
-            // Message bauen und überflüssige Leerzeilen entfernen
-            val rawMsg = resolveTpl(if (tplStored.isNotBlank()) tplStored else tplDefault, title, text, effectivePkg, now)
-            val msg = compactMultiline(rawMsg)
+            val effectivePkg = normalizePkg(packageForTpl ?: ctx.packageName)
+            val msg = resolveTpl(if (tplStored.isNotBlank()) tplStored else tplDefault, title, text, effectivePkg, now)
 
             val params = mutableMapOf(
                 "chat_id" to chatId,
@@ -272,7 +284,7 @@ object Sender {
         }
     }
 
-    // Headers helper
+    // Headers helper (simple JSON oder "Key: Value"-Zeilen)
     private fun applyUserHeaders(conn: HttpURLConnection, headers: String) {
         val t = headers.trim()
         if (t.startsWith("{") && t.endsWith("}")) {
