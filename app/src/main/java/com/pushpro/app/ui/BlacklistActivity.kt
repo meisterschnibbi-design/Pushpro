@@ -27,11 +27,17 @@ class BlacklistActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
         val blocked = (prefs.getStringSet("blacklist_set", emptySet()) ?: emptySet()).toMutableSet()
 
-        // Nur Apps mit Launcher-Intent anzeigen (entspricht Einstellungen → Apps)
+        // Apps laden: nur launchbare, keine System-Apps, nicht die eigene App
         val pm = packageManager
+        val myPkg = packageName
         val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
             .asSequence()
-            .filter { pm.getLaunchIntentForPackage(it.packageName) != null } // <-- nur launchbare Apps
+            // nur Apps mit Launcher-Intent (sichtbare Apps)
+            .filter { pm.getLaunchIntentForPackage(it.packageName) != null }
+            // System-Apps ausblenden (entspricht eher "Apps" Liste, die viele Systemdienste versteckt)
+            .filter { (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 }
+            // Eigene App nicht listen
+            .filter { it.packageName != myPkg }
             .map { ai ->
                 val name = runCatching { pm.getApplicationLabel(ai).toString() }.getOrDefault(ai.packageName)
                 val icon = runCatching { pm.getApplicationIcon(ai) }.getOrNull()
@@ -44,7 +50,7 @@ class BlacklistActivity : AppCompatActivity() {
         adapter = AppsAdapter(apps, blocked) { pkg, shouldBlock ->
             val newSet = blocked.toMutableSet()
             if (shouldBlock) newSet.add(pkg) else newSet.remove(pkg)
-            // Immer eine neue Menge speichern
+            // Immer eine neue Menge speichern (kein Live-View)
             prefs.edit().putStringSet("blacklist_set", newSet).apply()
             blocked.clear(); blocked.addAll(newSet)
         }
