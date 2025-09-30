@@ -27,12 +27,11 @@ class BlacklistActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
         val blocked = (prefs.getStringSet("blacklist_set", emptySet()) ?: emptySet()).toMutableSet()
 
-        // Apps wie in "Einstellungen → Apps": nur installierte, bevorzugt launchbare / nicht System
+        // Nur Apps mit Launcher-Intent anzeigen (entspricht Einstellungen → Apps)
         val pm = packageManager
         val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
             .asSequence()
-            // Bevorzugt nur Apps mit Launcher-Intent (sichtbare/benutzbare Apps)
-            .filter { pm.getLaunchIntentForPackage(it.packageName) != null || it.flags and ApplicationInfo.FLAG_SYSTEM == 0 }
+            .filter { pm.getLaunchIntentForPackage(it.packageName) != null } // <-- nur launchbare Apps
             .map { ai ->
                 val name = runCatching { pm.getApplicationLabel(ai).toString() }.getOrDefault(ai.packageName)
                 val icon = runCatching { pm.getApplicationIcon(ai) }.getOrNull()
@@ -45,7 +44,7 @@ class BlacklistActivity : AppCompatActivity() {
         adapter = AppsAdapter(apps, blocked) { pkg, shouldBlock ->
             val newSet = blocked.toMutableSet()
             if (shouldBlock) newSet.add(pkg) else newSet.remove(pkg)
-            // WICHTIG: immer eine NEUE Menge schreiben (nicht die alte mutieren)
+            // Immer eine neue Menge speichern
             prefs.edit().putStringSet("blacklist_set", newSet).apply()
             blocked.clear(); blocked.addAll(newSet)
         }
@@ -119,7 +118,7 @@ private class AppVH(private val root: android.widget.LinearLayout) : RecyclerVie
         title.text = name
         subtitle.text = pkg
 
-        // Listener resetten, State setzen, Listener wieder setzen -> vermeidet Ghost-Events
+        // Listener resetten → State setzen → Listener wieder setzen
         toggle.setOnCheckedChangeListener(null)
         toggle.isChecked = checked
         toggle.setOnCheckedChangeListener { _: CompoundButton, isChecked: Boolean ->
