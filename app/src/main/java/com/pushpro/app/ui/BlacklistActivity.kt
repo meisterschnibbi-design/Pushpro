@@ -1,6 +1,5 @@
 package com.pushpro.app.ui
 
-import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Bundle
@@ -30,10 +29,9 @@ class BlacklistActivity : AppCompatActivity() {
         val pm = packageManager
         val myPkg = packageName
 
-        // Ziel: NUR „normale, installierte Apps“ wie in den Systemeinstellungen → Apps
+        // Ziel: Apps wie in den Systemeinstellungen → Apps
         // 1) Nur Apps mit Launcher-Entry (sichtbar für den Nutzer)
-        // 2) System-Apps ausblenden
-        // 3) Eigene App ausblenden
+        // 2) Eigene App ausblenden
         val launchables = pm.queryIntentActivities(
             android.content.Intent(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_LAUNCHER),
             0
@@ -41,13 +39,9 @@ class BlacklistActivity : AppCompatActivity() {
 
         val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
             .asSequence()
-            .filter { it.packageName != myPkg } // eigene App nicht anzeigen
-            .filter { launchables.contains(it.packageName) } // nur Apps mit Launcher
-            .filter {
-                val flags = it.flags
-                (flags and ApplicationInfo.FLAG_SYSTEM) == 0 &&
-                (flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0
-            } // System verstecken
+            .filter { it.packageName != myPkg }               // eigene App nicht anzeigen
+            .filter { launchables.contains(it.packageName) }  // nur Apps mit Launcher
+            // *** System-Filter ENTFERNT, damit Google/Xiaomi-Apps erscheinen ***
             .map { ai ->
                 val name = runCatching { pm.getApplicationLabel(ai).toString() }
                     .getOrDefault(ai.packageName).ifBlank { ai.packageName }
