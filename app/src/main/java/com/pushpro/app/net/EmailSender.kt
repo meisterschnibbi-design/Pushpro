@@ -2,6 +2,9 @@ package com.pushpro.app.net
 
 import android.content.Context
 import android.util.Base64
+import android.os.Handler
+import android.os.Looper
+import android.widget.Toast
 import com.pushpro.app.util.LogUtil
 import java.io.BufferedReader
 import java.io.BufferedWriter
@@ -19,6 +22,12 @@ import javax.net.ssl.SSLSocketFactory
  * Wichtig: Viele Provider (z. B. Gmail) verlangen App-Passwörter / spezielle Ports.
  */
 object EmailSender {
+
+    private fun toast(ctx: Context, msg: String) {
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     /** tlsMode: 0=None, 1=STARTTLS, 2=SSL/TLS */
     fun sendTestEmail(
@@ -149,10 +158,18 @@ object EmailSender {
             send(w, "QUIT")
             sock.close()
 
-            run { val isTest = subject == "PushPro Test"; LogUtil.append(ctx, (if (isTest) "Email test OK" else "Email OK") + " → " + recipient + " via " + host + ":" + portStr + " (mode=" + tlsMode + ")") }
+            run {
+                val isTest = subject == "PushPro Test"
+                LogUtil.append(ctx, (if (isTest) "Email test OK" else "Email OK") + " → " + recipient + " via " + host + ":" + portStr + " (mode=" + tlsMode + ")")
+                if (isTest) toast(ctx, "Email test OK")
+            }
             true to "OK"
         } catch (e: Throwable) {
-            run { val isTest = subject == "PushPro Test"; LogUtil.append(ctx, if (isTest) "Email test FAILED (${e.message ?: "error"})" else "Email FAILED (${e.message ?: "error"})") }
+            run {
+                val isTest = subject == "PushPro Test"
+                LogUtil.append(ctx, if (isTest) "Email test FAILED (${e.message ?: "error"})" else "Email FAILED (${e.message ?: "error"})")
+                if (isTest) toast(ctx, "Email test failed")
+            }
             false to (e.message ?: "error")
         }
     }
