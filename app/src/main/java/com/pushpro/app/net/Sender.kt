@@ -72,6 +72,12 @@ object Sender {
     private fun compactMultiline(s: String): String =
         s.replace(Regex("(\\r?\\n){2,}"), "\n").trim()
 
+    // NEW: wandelt sichtbare Sequenzen (\n, \r, \t) in echte Steuerzeichen um
+    private fun unescapeUserEscapes(s: String): String =
+        s.replace("\\n", "\n")
+            .replace("\\r", "\r")
+            .replace("\\t", "\t")
+
     private fun normalizePkg(pkg: String): String =
         pkg.replace(Regex("\\.clone(\\d+)\\.clone\\1$"), ".clone$1")
 
@@ -142,33 +148,6 @@ object Sender {
             }
         }
 
-        // EMAIL
-        if (p.getBoolean("email_enabled", false) &&
-            allowByWhitelist(p.getString("email_input_whitelist", ""), cleanTitle, cleanText, pkg) &&
-            matchContains(p.getString("email_input_contains", ""), cleanTitle, cleanText, pkg)
-        ) {
-            val host = p.getString("email_input_host", "") ?: ""
-            val port = p.getString("email_input_port", "") ?: ""
-            val user = p.getString("email_input_user", "") ?: ""
-            val pass = p.getString("email_input_pass", "") ?: ""
-            val tls = p.getInt("email_input_tls_mode", 1) // 0=None, 1=STARTTLS, 2=SSL/TLS
-            val to = p.getString("email_input_recipient", "") ?: ""
-            val prefix = p.getString("email_input_subject_prefix", "") ?: ""
-            val subject = (if (prefix.isNotBlank()) "$prefix " else "") + cleanTitle
-            val body = buildString {
-                append(cleanText).append('\n')
-                append(normalizePkg(pkg)).append('\n')
-                append(sdf.format(Date()))
-            }
-            to.split(Regex("""[,;\s]+"""))
-                .map { it.trim() }
-                .filter { it.isNotEmpty() }
-                .distinct()
-                .forEach { one ->
-                    thread { EmailSender.sendEmail(ctx, host, port, user, pass, tls, one, subject, body) }
-                }
-        }
-
         // WEBHOOK
         if (p.getBoolean("wh_enabled", false) &&
             allowByWhitelist(p.getString("wh_whitelist", ""), cleanTitle, cleanText, pkg) &&
@@ -216,6 +195,92 @@ object Sender {
         }
     }
 
+    // ----- Telegram -----
+    // packageForTpl steuert, welcher Paketname in {package} landet.
+    private fun sendTelegram(
+        ctx: Context,
+        token: String,
+        chatId: String,
+        parseModeIdx: Int,
+        headerPrefix: String?,
+        text: String,
+        packageForTpl: String?,
+        disablePreview: Boolean,
+        silent: Boolean,
+        protect: Boolean
+    ) {
+        try {
+            val parse = listOf("None", "Markdown", "HTML").getOrElse(parseModeIdx) { "None" }
+            val url = "https://api.telegram.org/bot$token/sendMessage"
+
+            val px = ctx.getSharedPreferences("prefs", Context.MODE_PRIVATE)
+            val tplStored = px.getString("tg_tpl", "") ?: ""
+            val tplDefault = "{title}\n{text}\n{package}\n{time}"
+            val now = sdf.format(Date())
+            val title = headerPrefix?.takeIf { it.isNotBlank() } ?: ""
+            val effectivePkg = normalizePkg(packageForTpl ?: ctx.packageName)
+
+            // Wichtig: sichtbare \n in echte Newlines wandeln, danach kompaktieren
+            val rawMsg = resolveTpl(
+                if (tplStored.isNotBlank()) tplStored else tplDefault,
+                title,
+                text,
+                effectivePkg,
+                now
+            )
+            val msg = compactMultiline(unescapeUserEscapes(rawMsg))
+
+            val params = mutableMapOf(
+                "chat_id" to chatId,
+                "text" to msg
+            )
+            if (parse != "None") params["parse_mode"] = parse
+            if (disablePreview) params["disable_web_page_preview"] = "true"
+            if (silent) params["disable_notification"] = "true"
+            if (protect) params["protect_content"] = "true"
+
+            val body = params.entries.joinToString("&") { (k, v) -> "${enc(k)}=${enc(v)}" }
+
+            val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 8000
+                readTimeout = 8000
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
+            }
+            BufferedOutputStream(conn.outputStream).use { it.write(body.toByteArray(Charsets.UTF_8)) }
+            val code = conn.responseCode
+            try { BufferedReader(InputStreamReader(conn.inputStream)).readText() } catch (_: Throwable) {}
+            run {
+                val isTest = (text == "Test from PushPro")
+                LogUtil.append(
+                    ctx,
+                    if (code in 200.299)
+                        if (isTest) "Telegram test OK" else "Telegram OK"
+                    else
+                        if (isTest) "Telegram test FAILED (code=$code)" else "Telegram FAILED (code=$code)"
+                )
+            }
+            if (text == "Test from PushPro") toast(ctx, if (code in 200.299) "Telegram test OK" else "Telegram test failed")
+            ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE).edit()
+                .putBoolean("last_send_error_tg", code !in 200.299).apply()
+            conn.disconnect()
+        } catch (e: Throwable) {
+            run {
+                val isTest = (text == "Test from PushPro")
+                LogUtil.append(
+                    ctx,
+                    if (isTest) "Telegram test FAILED (${e.message ?: "error"})"
+                    else "Telegram FAILED (${e.message ?: "error"})"
+                )
+            }
+            if (text == "Test from PushPro") toast(ctx, "Telegram test failed")
+            ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE).edit()
+                .putBoolean("last_send_error_tg", true).apply()
+        }
+    }
+
+    // ----- Webhook -----
     private fun sendWebhook(
         ctx: Context,
         url: String,
@@ -246,131 +311,32 @@ object Sender {
                 normalizePkg(pkg),
                 now
             )
-
-            val method = listOf("GET", "POST", "PUT", "PATCH").getOrElse(methodIndex) { "POST" }
-            val contentType = when (kind) {
-                "json" -> "application/json; charset=utf-8"
-                "form" -> "application/x-www-form-urlencoded; charset=utf-8"
-                "plain" -> "text/plain; charset=utf-8"
-                else -> "application/xml; charset=utf-8"
+            val finalBody = when (kind) {
+                "json" -> escapeJson(body)
+                "xml" -> escapeXml(body)
+                else -> unescapeUserEscapes(body) // auch hier sichtbare \n zu echten Newlines
             }
+
+            val method = listOf("GET", "POST", "PUT", "DELETE").getOrElse(methodIndex) { "POST" }
 
             val conn = (URL(url).openConnection() as HttpURLConnection).apply {
                 connectTimeout = 8000
                 readTimeout = 8000
                 requestMethod = method
-                doInput = true
-                if (method != "GET") doOutput = true
-                setRequestProperty("Content-Type", contentType)
-                headersJson?.let { applyUserHeaders(this, it) }
+                doOutput = method != "GET"
+                if (headersJson?.isNotBlank() == true) applyUserHeaders(this, headersJson)
+                if (doOutput) setRequestProperty("Content-Type", "text/plain; charset=utf-8")
             }
+
             if (conn.doOutput) {
-                BufferedOutputStream(conn.outputStream).use { it.write(body.toByteArray(Charsets.UTF_8)) }
+                BufferedOutputStream(conn.outputStream).use { it.write(finalBody.toByteArray(Charsets.UTF_8)) }
             }
             val code = conn.responseCode
             try { BufferedReader(InputStreamReader(conn.inputStream)).readText() } catch (_: Throwable) {}
-            run {
-                val isTest = (title == "PushPro Test")
-                LogUtil.append(
-                    ctx,
-                    if (code in 200..299)
-                        if (isTest) "Webhook test OK" else "Webhook OK"
-                    else
-                        if (isTest) "Webhook test FAILED (code=$code)" else "Webhook FAILED (code=$code)"
-                )
-            }
-            if (title == "PushPro Test") toast(ctx, if (code in 200..299) "Webhook test OK" else "Webhook test failed")
-            ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE).edit()
-                .putBoolean("last_send_error_webhook", code !in 200..299).apply()
+            LogUtil.append(ctx, if (code in 200.299) "Webhook OK" else "Webhook FAILED (code=$code)")
             conn.disconnect()
         } catch (e: Throwable) {
-            run {
-                val isTest = (title == "PushPro Test")
-                LogUtil.append(
-                    ctx,
-                    if (isTest) "Webhook test FAILED (${e.message ?: "error"})"
-                    else "Webhook FAILED (${e.message ?: "error"})"
-                )
-            }
-            if (title == "PushPro Test") toast(ctx, "Webhook test failed")
-            ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE).edit()
-                .putBoolean("last_send_error_webhook", true).apply()
-        }
-    }
-
-    // packageForTpl steuert, welcher Paketname in {package} landet.
-    private fun sendTelegram(
-        ctx: Context,
-        token: String,
-        chatId: String,
-        parseModeIdx: Int,
-        headerPrefix: String?,
-        text: String,
-        packageForTpl: String?,
-        disablePreview: Boolean,
-        silent: Boolean,
-        protect: Boolean
-    ) {
-        try {
-            val parse = listOf("None", "Markdown", "HTML").getOrElse(parseModeIdx) { "None" }
-            val url = "https://api.telegram.org/bot$token/sendMessage"
-
-            val px = ctx.getSharedPreferences("prefs", Context.MODE_PRIVATE)
-            val tplStored = px.getString("tg_tpl", "") ?: ""
-            val tplDefault = "{title}\n{text}\n{package}\n{time}"
-            val now = sdf.format(Date())
-            val title = headerPrefix?.takeIf { it.isNotBlank() } ?: ""
-            val effectivePkg = normalizePkg(packageForTpl ?: ctx.packageName)
-            val rawMsg = resolveTpl(if (tplStored.isNotBlank()) tplStored else tplDefault, title, text, effectivePkg, now)
-            val msg = compactMultiline(rawMsg)
-
-            val params = mutableMapOf(
-                "chat_id" to chatId,
-                "text" to msg
-            )
-            if (parse != "None") params["parse_mode"] = parse
-            if (disablePreview) params["disable_web_page_preview"] = "true"
-            if (silent) params["disable_notification"] = "true"
-            if (protect) params["protect_content"] = "true"
-
-            val body = params.entries.joinToString("&") { (k, v) -> "${enc(k)}=${enc(v)}" }
-
-            val conn = (URL(url).openConnection() as HttpURLConnection).apply {
-                connectTimeout = 8000
-                readTimeout = 8000
-                requestMethod = "POST"
-                doOutput = true
-                setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
-            }
-            BufferedOutputStream(conn.outputStream).use { it.write(body.toByteArray(Charsets.UTF_8)) }
-            val code = conn.responseCode
-            try { BufferedReader(InputStreamReader(conn.inputStream)).readText() } catch (_: Throwable) {}
-            run {
-                val isTest = (text == "Test from PushPro")
-                LogUtil.append(
-                    ctx,
-                    if (code in 200..299)
-                        if (isTest) "Telegram test OK" else "Telegram OK"
-                    else
-                        if (isTest) "Telegram test FAILED (code=$code)" else "Telegram FAILED (code=$code)"
-                )
-            }
-            if (text == "Test from PushPro") toast(ctx, if (code in 200..299) "Telegram test OK" else "Telegram test failed")
-            ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE).edit()
-                .putBoolean("last_send_error_tg", code !in 200..299).apply()
-            conn.disconnect()
-        } catch (e: Throwable) {
-            run {
-                val isTest = (text == "Test from PushPro")
-                LogUtil.append(
-                    ctx,
-                    if (isTest) "Telegram test FAILED (${e.message ?: "error"})"
-                    else "Telegram FAILED (${e.message ?: "error"})"
-                )
-            }
-            if (text == "Test from PushPro") toast(ctx, "Telegram test failed")
-            ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE).edit()
-                .putBoolean("last_send_error_tg", true).apply()
+            LogUtil.append(ctx, "Webhook FAILED (${e.message ?: "error"})")
         }
     }
 
