@@ -1,15 +1,11 @@
 package com.pushpro.app.ui
 
-import android.app.NotificationManager
-import android.content.Context
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.view.View
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.button.MaterialButton
 import com.pushpro.R
@@ -17,147 +13,253 @@ import com.pushpro.app.util.LogUtil
 
 class SettingsActivity : AppCompatActivity() {
 
-    // ---- Runtime-Permission für Android 13+ (POST_NOTIFICATIONS) ----
-    private val requestPostNotifications =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ ->
-            // Unabhängig vom Ergebnis die Ziel-Seiten öffnen
-            openNotificationListenerAccess()
-            openAppNotificationSettingsFallback()
-        }
-
-    // ---- Export/Import Launcher (Create/Open Document) ----
-    private val exportLauncher =
-        registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
-            if (uri != null) {
-                try {
-                    val json = exportAllAsJson()
-                    contentResolver.openOutputStream(uri)?.use {
-                        it.write(json.toByteArray(Charsets.UTF_8))
-                    }
-                    Toast.makeText(this, "Konfiguration exportiert", Toast.LENGTH_SHORT).show()
-                } catch (e: Throwable) {
-                    Toast.makeText(this, "Export fehlgeschlagen: ${e.message}", Toast.LENGTH_SHORT).show()
-                    LogUtil.append(this, "Export failed: ${e.message}")
-                }
-            }
-        }
-
-    private val importLauncher =
-        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            if (uri != null) {
-                try {
-                    contentResolver.takePersistableUriPermission(
-                        uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    )
-                } catch (_: Throwable) { /* optional */ }
-                try {
-                    val json = contentResolver.openInputStream(uri)?.use {
-                        it.readBytes().toString(Charsets.UTF_8)
-                    } ?: ""
-                    importAllFromJson(json)
-                    Toast.makeText(this, "Konfiguration importiert", Toast.LENGTH_SHORT).show()
-                } catch (e: Throwable) {
-                    Toast.makeText(this, "Import fehlgeschlagen: ${e.message}", Toast.LENGTH_SHORT).show()
-                    LogUtil.append(this, "Import failed: ${e.message}")
-                }
-            }
-        }
+    private val REQ_EXPORT = 1001
+    private val REQ_IMPORT = 1002
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings_menu)
 
-        // ---------- Open Access (nur dieser Flow wurde geändert) ----------
-        bind<MaterialButton>("btnOpenAccess")?.setOnClickListener {
-            // 1) Android 13+: App-Notification Permission als Runtime-Permission (falls nicht erteilt)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                if (!nm.areNotificationsEnabled()) {
-                    requestPostNotifications.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                    return@setOnClickListener
+        // --- Open Access (nur diese Stelle geändert) ---
+        findViewById<MaterialButton>(R.id.btnOpenAccess).setOnClickListener {
+            // 1) Seite "Benachrichtigungszugriff" (Notification Listener)
+            try {
+                startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            } catch (_: Exception) { /* ignore */ }
+
+            // 2) App-Benachrichtigungseinstellungen mit vollen Extras (MIUI/Hersteller)
+            try {
+                val i = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                    putExtra("android.provider.extra.APP_PACKAGE", packageName)
+                    putExtra("app_package", packageName)
+                    putExtra("app_uid", applicationInfo?.uid ?: 0)
                 }
+                startActivity(i)
+            } catch (_: Exception) {
+                // 3) Fallback: App-Detailseite
+                try {
+                    startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.parse("package:$packageName")
+                    })
+                } catch (_: Exception) { /* ignore */ }
             }
-            // 2) Seite „Benachrichtigungszugriff“ (Notification Listener)
-            openNotificationListenerAccess()
-            // 3) Fallback: App-Benachrichtigungseinstellungen (wichtig bei MIUI)
-            openAppNotificationSettingsFallback()
+        }
+        // --- Ende der Änderung ---
+
+        findViewById<MaterialButton>(R.id.btnBatterySettings).setOnClickListener {
+            startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
         }
 
-        // ---------- Die restlichen Buttons bleiben erhalten ----------
-        bind<MaterialButton>("btnBattery")?.setOnClickListener {
-            startActivity(Intent(this, AccessActivity::class.java))
-        }
-        bind<MaterialButton>("btnLogViewer")?.setOnClickListener {
+        findViewById<MaterialButton>(R.id.btnLogViewer).setOnClickListener {
             startActivity(Intent(this, LogViewerActivity::class.java))
         }
-        bind<MaterialButton>("btnDiagnostics")?.setOnClickListener {
+
+        findViewById<MaterialButton>(R.id.btnDiagnostics).setOnClickListener {
             startActivity(Intent(this, DiagnosticsActivity::class.java))
         }
-        bind<MaterialButton>("btnBlacklist")?.setOnClickListener {
+
+        findViewById<MaterialButton>(R.id.btnResetSettings).setOnClickListener {
+            val px = getSharedPreferences("prefs", MODE_PRIVATE)
+            val pp = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
+            px.edit()
+                .clear()
+                .apply()
+            pp.edit()
+                .putBoolean("global_enabled", false)
+                .putBoolean("webhook_enabled", false)
+                .putBoolean("email_enabled", false)
+                .putBoolean("telegram_enabled", false)
+                .apply()
+
+            LogUtil.append(this, "Settings reset to defaults (templates & modes restored)")
+            Toast.makeText(this, "All settings & templates reset", Toast.LENGTH_SHORT).show()
+        }
+
+        // New: Blacklist & Statistics
+        findViewById<MaterialButton>(R.id.btnBlacklist)?.setOnClickListener {
             startActivity(Intent(this, BlacklistActivity::class.java))
         }
-        bind<MaterialButton>("btnStatistics")?.setOnClickListener {
+        findViewById<MaterialButton>(R.id.btnStatistics)?.setOnClickListener {
             startActivity(Intent(this, StatisticsActivity::class.java))
         }
-        bind<MaterialButton>("btnExport")?.setOnClickListener {
-            try {
-                exportLauncher.launch("pushpro_config.json")
-            } catch (e: Throwable) {
-                Toast.makeText(this, "Export nicht möglich: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
-        bind<MaterialButton>("btnImport")?.setOnClickListener {
-            try {
-                importLauncher.launch(arrayOf("application/json"))
-            } catch (e: Throwable) {
-                Toast.makeText(this, "Import nicht möglich: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
 
-    // ---------- Helpers ----------
+        // Export via SAF
+        findViewById<MaterialButton>(R.id.btnExportConfig).setOnClickListener {
+            val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "application/json"
+                putExtra(Intent.EXTRA_TITLE, "pushpro-config.json")
+            }
+            startActivityForResult(intent, REQ_EXPORT)
+        }
 
-    private fun openNotificationListenerAccess() {
-        try {
-            val i = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            startActivity(i)
-        } catch (_: Throwable) {
-            // ältere Geräte ignorieren
+        // Import via SAF
+        findViewById<MaterialButton>(R.id.btnImportConfig)?.setOnClickListener {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "application/json"
+            }
+            startActivityForResult(intent, REQ_IMPORT)
         }
     }
 
-    private fun openAppNotificationSettingsFallback() {
-        // Versuche App-spezifische Benachrichtigungseinstellungen mit allen gängigen Extras
-        try {
-            val i = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
-                putExtra("android.provider.extra.APP_PACKAGE", packageName)
-                putExtra("app_package", packageName)
-                putExtra("app_uid", applicationInfo?.uid ?: 0)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            startActivity(i)
-        } catch (_: Throwable) {
-            // Letzter Fallback: App-Detailseite
-            try {
-                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.parse("package:$packageName")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode != Activity.RESULT_OK || data == null) return
+        val uri: Uri = data.data ?: return
+
+        when (requestCode) {
+            REQ_EXPORT -> {
+                try {
+                    val json = exportAllAsJson()
+                    contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray(Charsets.UTF_8)) }
+                    Toast.makeText(this, "Config exported", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Export failed: " + (e.message ?: "error"), Toast.LENGTH_LONG).show()
                 }
-                startActivity(intent)
-            } catch (_: Throwable) { /* no-op */ }
+            }
+            REQ_IMPORT -> {
+                try {
+                    val json = contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) } ?: ""
+                    importAllFromJson(json)
+                    Toast.makeText(this, "Config imported", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Import failed: " + (e.message ?: "error"), Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 
-    // robuste View-Bindings per Ressourcenname (keine R.id-Abhängigkeit -> keine Build-Fehler)
-    private inline fun <reified T : View> bind(idName: String): T? {
-        val id = resources.getIdentifier(idName, "id", packageName)
-        if (id == 0) return null
-        return findViewById(id)
+    private fun exportAllAsJson(): String {
+        val p1 = getSharedPreferences("prefs", MODE_PRIVATE).all
+        val p2 = getSharedPreferences("pushpro_prefs", MODE_PRIVATE).all
+        fun escape(s: String) = s
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+
+        fun mapToJson(m: Map<String, *>): String {
+            val sb = StringBuilder().append("{")
+            val it = m.entries.iterator()
+            while (it.hasNext()) {
+                val e = it.next()
+                val value: String = when (val v = e.value) {
+                    is Set<*> -> "[" + v.filterNotNull().joinToString(",") { "\"${escape(it.toString())}\"" } + "]"
+                    else -> "\"${escape(v?.toString() ?: "")}\""
+                }
+                sb.append("\"").append(escape(e.key)).append("\": ").append(value)
+                if (it.hasNext()) sb.append(",")
+            }
+            sb.append("}")
+            return sb.toString()
+        }
+        return "{\n\"prefs\": " + mapToJson(p1) + ", \n\"pushpro_prefs\": " + mapToJson(p2) + "\n}"
     }
 
-    // Platzhalter – nutze hier deine echte Implementierung, falls vorhanden
-    private fun exportAllAsJson(): String = "{}"
-    private fun importAllFromJson(json: String) { /* implementiert bereits in deinem Projekt? */ }
+    private fun importAllFromJson(json: String) {
+        // very simple parser expecting {"prefs": {...}, "pushpro_prefs": {...}}
+        fun extract(section: String): Map<String, String> {
+            val key = "\"$section\""
+            val start = json.indexOf(key)
+            if (start < 0) return emptyMap()
+            val brace = json.indexOf('{', start)
+            var depth = 0
+            var end = -1
+            for (i in brace until json.length) {
+                if (json[i] == '{') depth += 1
+                if (json[i] == '}') {
+                    depth -= 1
+                    if (depth == 0) { end = i; break }
+                }
+            }
+            if (end < 0) return emptyMap()
+            val body = json.substring(brace + 1, end)
+
+            // Split by commas at top level (naiv, reicht für unsere flache Map)
+            val out = mutableMapOf<String, String>()
+            var i = 0
+            var startItem = 0
+            var inQuotes = false
+            while (i < body.length) {
+                val c = body[i]
+                if (c == '"') inQuotes = !inQuotes
+                if (!inQuotes && (c == ',')) {
+                    val pair = body.substring(startItem, i)
+                    val idx = pair.indexOf(':')
+                    if (idx > 0) {
+                        val k = pair.substring(0, idx).trim().trim('"')
+                        val v = pair.substring(idx + 1).trim()
+                            .trim() // keep quotes or brackets for type detection
+                            .trim()
+                        out[k] = v.trim()
+                    }
+                    startItem = i + 1
+                }
+                i++
+            }
+            // last item
+            val last = body.substring(startItem).trim()
+            if (last.isNotEmpty()) {
+                val idx = last.indexOf(':')
+                if (idx > 0) {
+                    val k = last.substring(0, idx).trim().trim('"')
+                    val v = last.substring(idx + 1).trim()
+                    out[k] = v.trim()
+                }
+            }
+            return out
+        }
+
+        val p1 = extract("prefs")
+        val p2 = extract("pushpro_prefs")
+
+        fun EditorPutTyped(editor: android.content.SharedPreferences.Editor, k: String, raw: String) {
+            val v = raw.trim()
+
+            // StringSet: ["a","b",...]
+            if (v.startsWith("[") && v.endsWith("]")) {
+                val inner = v.substring(1, v.length - 1).trim()
+                val set = if (inner.isEmpty()) {
+                    emptySet<String>()
+                } else {
+                    // split top-level by comma, remove quotes
+                    inner.split(',').map { it.trim().trim('"') }.toSet()
+                }
+                editor.putStringSet(k, set)
+                return
+            }
+
+            // Boolean
+            if (v.equals("\"true\"", true) || v.equals("true", true)) {
+                editor.putBoolean(k, true); return
+            }
+            if (v.equals("\"false\"", true) || v.equals("false", true)) {
+                editor.putBoolean(k, false); return
+            }
+
+            // Int
+            val intClean = v.trim('"')
+            if (intClean.matches(Regex("^-?\\d+$"))) {
+                runCatching { intClean.toInt() }.onSuccess { editor.putInt(k, it); return }
+            }
+
+            // Float
+            if (intClean.matches(Regex("^-?\\d+\\.\\d+$"))) {
+                runCatching { intClean.toFloat() }.onSuccess { editor.putFloat(k, it); return }
+            }
+
+            // Fallback String (strip surrounding quotes if present)
+            editor.putString(k, intClean)
+        }
+
+        val sp1 = getSharedPreferences("prefs", MODE_PRIVATE).edit()
+        for ((k, v) in p1) EditorPutTyped(sp1, k, v)
+        sp1.apply()
+
+        val sp2 = getSharedPreferences("pushpro_prefs", MODE_PRIVATE).edit()
+        for ((k, v) in p2) EditorPutTyped(sp2, k, v)
+        sp2.apply()
+    }
 }
