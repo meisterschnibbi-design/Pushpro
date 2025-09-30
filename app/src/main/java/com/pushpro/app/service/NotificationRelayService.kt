@@ -29,6 +29,14 @@ class NotificationRelayService : NotificationListenerService() {
                 return
             }
 
+            // *** Reconnect-Guard: nur Replays verwerfen (immer weiterleiten im Normalbetrieb) ***
+            if (connectedAt > 0 && sbn.postTime < connectedAt) {
+                // Dies sind vom System erneut gelieferte (ältere) Benachrichtigungen direkt nach Connect
+                LogUtil.append(this, "Ignored replay after rebind: $pkg")
+                return
+            }
+            // **************************************************************************************
+
             // 1) Group Summary ignorieren
             if ((n.flags and Notification.FLAG_GROUP_SUMMARY) != 0) return
 
@@ -50,7 +58,7 @@ class NotificationRelayService : NotificationListenerService() {
             // 4) Titel/Text robust extrahieren
             val (title, text) = extractTitleText(n.extras)
 
-            // 5) Debounce
+            // 5) Debounce (unverändert)
             val key = buildDedupKey(sbn, pkg, title, text)
             if (isDuplicate(key)) return
 
@@ -62,11 +70,12 @@ class NotificationRelayService : NotificationListenerService() {
     }
 
     override fun onListenerConnected() {
+        connectedAt = System.currentTimeMillis()   // Zeit der aktuellen Verbindung merken
         LogUtil.append(this, "Notification listener connected")
     }
 
     override fun onListenerDisconnected() {
-        ensureBound(this)
+        ensureBound(this) // nur hier bei echtem Disconnect neu binden
         LogUtil.append(this, "Notification listener disconnected – rebind issued")
     }
 
@@ -126,6 +135,8 @@ class NotificationRelayService : NotificationListenerService() {
 
     companion object {
         private const val WINDOW_MS = 2500L
+        @Volatile private var connectedAt: Long = 0L
+
         private val recent = Collections.synchronizedMap(
             object : LinkedHashMap<String, Long>(256, 0.75f, true) {
                 override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Long>?): Boolean {
