@@ -1,6 +1,5 @@
 package com.pushpro.app.ui
 
-import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Bundle
@@ -23,15 +22,14 @@ class BlacklistActivity : AppCompatActivity() {
         val recycler = findViewById<RecyclerView>(R.id.recyclerApps)
         recycler.layoutManager = LinearLayoutManager(this)
 
-        // Aktuellen Blacklist-Stand laden (Kopie machen – getStringSet liefert Live-View!)
         val prefs = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
         val blocked = (prefs.getStringSet("blacklist_set", emptySet()) ?: emptySet()).toMutableSet()
 
-        // Nur Apps mit Launcher-Intent anzeigen (entspricht Einstellungen → Apps)
+        // Nur Apps mit Launcher-Intent (wie Einstellungen → Apps)
         val pm = packageManager
         val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
             .asSequence()
-            .filter { pm.getLaunchIntentForPackage(it.packageName) != null } // <-- nur launchbare Apps
+            .filter { pm.getLaunchIntentForPackage(it.packageName) != null }
             .map { ai ->
                 val name = runCatching { pm.getApplicationLabel(ai).toString() }.getOrDefault(ai.packageName)
                 val icon = runCatching { pm.getApplicationIcon(ai) }.getOrNull()
@@ -44,7 +42,6 @@ class BlacklistActivity : AppCompatActivity() {
         adapter = AppsAdapter(apps, blocked) { pkg, shouldBlock ->
             val newSet = blocked.toMutableSet()
             if (shouldBlock) newSet.add(pkg) else newSet.remove(pkg)
-            // Immer eine neue Menge speichern
             prefs.edit().putStringSet("blacklist_set", newSet).apply()
             blocked.clear(); blocked.addAll(newSet)
         }
@@ -118,7 +115,6 @@ private class AppVH(private val root: android.widget.LinearLayout) : RecyclerVie
         title.text = name
         subtitle.text = pkg
 
-        // Listener resetten → State setzen → Listener wieder setzen
         toggle.setOnCheckedChangeListener(null)
         toggle.isChecked = checked
         toggle.setOnCheckedChangeListener { _: CompoundButton, isChecked: Boolean ->

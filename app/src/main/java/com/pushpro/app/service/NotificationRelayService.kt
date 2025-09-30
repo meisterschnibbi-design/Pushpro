@@ -23,12 +23,22 @@ class NotificationRelayService : NotificationListenerService() {
             val pkg = sbn.packageName ?: ""
             if (pkg == packageName) return
 
+            // Blacklist (sicherstellen, dass blockierte Pakete gar nicht erst geforwardet werden)
+            run {
+                val prefs = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
+                val blocked = prefs.getStringSet("blacklist_set", emptySet()) ?: emptySet()
+                if (blocked.contains(pkg)) {
+                    LogUtil.append(this, "Blocked by blacklist: $pkg")
+                    return
+                }
+            }
+
             // 1) Group Summary ignorieren
             if ((n.flags and Notification.FLAG_GROUP_SUMMARY) != 0) return
 
             // 2) Ongoing/Foreground-Service ignorieren
             if ((n.flags and Notification.FLAG_ONGOING_EVENT) != 0 ||
-                (n.flags and 0x00000040) != 0 // FLAG_FOREGROUND_SERVICE ist nicht immer öffentlich
+                (n.flags and 0x00000040) != 0 // FLAG_FOREGROUND_SERVICE (nicht immer öffentlich)
             ) return
 
             // 3) Channel-Importance prüfen: nur sichtbare Notifications
@@ -38,7 +48,7 @@ class NotificationRelayService : NotificationListenerService() {
                 val imp = channel?.importance ?: NotificationManager.IMPORTANCE_DEFAULT
                 if (imp < NotificationManager.IMPORTANCE_DEFAULT) return
             } catch (_: Throwable) {
-                // falls kein Channel verfügbar → Default nehmen
+                // kein Channel → Default
             }
 
             // 4) Titel/Text robust extrahieren
