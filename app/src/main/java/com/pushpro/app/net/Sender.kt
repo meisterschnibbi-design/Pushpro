@@ -173,6 +173,37 @@ object Sender {
                 }
         }
 
+        // EMAIL  (wieder aktiviert)
+        if (p.getBoolean("email_enabled", false) &&
+            allowByWhitelist(p.getString("email_input_whitelist", ""), cleanTitle, cleanText, pkg) &&
+            matchContains(p.getString("email_input_contains", ""), cleanTitle, cleanText, pkg)
+        ) {
+            val host = p.getString("email_input_host", "") ?: ""
+            val port = p.getString("email_input_port", "") ?: ""
+            val user = p.getString("email_input_user", "") ?: ""
+            val pass = p.getString("email_input_pass", "") ?: ""
+            val tls = p.getInt("email_input_tls_mode", 1)
+            val recipient = p.getString("email_input_recipient", "") ?: ""
+            val subjectPrefix = p.getString("email_input_subject_prefix", "") ?: ""
+            val subject = (if (subjectPrefix.isNotBlank()) "$subjectPrefix " else "") + cleanTitle
+
+            if (host.isNotBlank() && recipient.isNotBlank()) {
+                thread {
+                    EmailSender.sendEmail(
+                        ctx,
+                        host = host,
+                        portStr = port,
+                        user = user,
+                        pass = pass,
+                        tlsMode = tls,
+                        recipient = recipient,
+                        subject = subject,
+                        body = cleanText
+                    )
+                }
+            }
+        }
+
         // TELEGRAM
         if (p.getBoolean("tg_enabled", false) &&
             allowByWhitelist(p.getString("tg_whitelist", ""), cleanTitle, cleanText, pkg) &&
