@@ -136,15 +136,25 @@ object EmailSender {
 
             val from = if (user.isNotBlank()) user else "noreply@pushpro"
 
+            // --- MEHRERE EMPFÄNGER (Komma / Semikolon) ---
+            val recipients = recipient.split(',', ';')
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+            // ------------------------------------------------
+
             // MAIL / RCPT / DATA
             send(w, "MAIL FROM:<$from>"); readExpect(r, "250")
-            send(w, "RCPT TO:<$recipient>"); readExpect(r, "250")
+            // Für jeden Empfänger einzeln RCPT TO schicken
+            for (rcpt in recipients) {
+                send(w, "RCPT TO:<$rcpt>"); readExpect(r, "250")
+            }
             send(w, "DATA"); readExpect(r, "354")
 
             // Nachricht
+            val toHeader = recipients.joinToString(", ")
             w.write("Subject: $subject\r\n")
             w.write("From: $from\r\n")
-            w.write("To: $recipient\r\n")
+            w.write("To: $toHeader\r\n")
             w.write("MIME-Version: 1.0\r\n")
             w.write("Content-Type: text/plain; charset=UTF-8\r\n")
             w.write("\r\n")
@@ -158,7 +168,7 @@ object EmailSender {
 
             run {
                 val isTest = subject == "PushPro Test"
-                LogUtil.append(ctx, (if (isTest) "Email test OK" else "Email OK") + " → " + recipient + " via " + host + ":" + portStr + " (mode=" + tlsMode + ")")
+                LogUtil.append(ctx, (if (isTest) "Email test OK" else "Email OK") + " → " + toHeader + " via " + host + ":" + portStr + " (mode=" + tlsMode + ")")
                 if (isTest) toast(ctx, "Email test OK")
             }
             true to "OK"
