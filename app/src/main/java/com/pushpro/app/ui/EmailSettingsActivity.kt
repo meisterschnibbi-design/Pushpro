@@ -47,14 +47,14 @@ class EmailSettingsActivity : AppCompatActivity() {
 
         // Load
         swEnabled.isChecked = prefs.getBoolean("email_enabled", false)
-        inputHost.setText(prefs.getString("email_input_host", "") ?: "")
-        inputPort.setText(prefs.getString("email_input_port", "") ?: "")
-        inputUser.setText(prefs.getString("email_input_user", "") ?: "")
-        inputPass.setText(prefs.getString("email_input_pass", "") ?: "")
-        inputRecipient.setText(prefs.getString("email_input_recipient", "") ?: "")
-        inputSubject.setText(prefs.getString("email_input_subject_prefix", "") ?: "")
-        inputWhitelist.setText(prefs.getString("email_input_whitelist", "") ?: "")
-        inputContains.setText(prefs.getString("email_input_contains", "") ?: "")
+        inputHost.setText(prefs.all["email_input_host"]?.toString() ?: "")
+        inputPort.setText(prefs.all["email_input_port"]?.toString() ?: "")
+        inputUser.setText(prefs.all["email_input_user"]?.toString() ?: "")
+        inputPass.setText(prefs.all["email_input_pass"]?.toString() ?: "")
+        inputRecipient.setText(prefs.all["email_input_recipient"]?.toString() ?: "")
+        inputSubject.setText(prefs.all["email_input_subject_prefix"]?.toString() ?: "")
+        inputWhitelist.setText(prefs.all["email_input_whitelist"]?.toString() ?: "")
+        inputContains.setText(prefs.all["email_input_contains"]?.toString() ?: "")
         spinnerTls.setSelection((prefs.getInt("email_input_tls_mode", 1)).coerceIn(0, 2))
 
         spinnerTls.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
