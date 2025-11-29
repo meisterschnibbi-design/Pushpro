@@ -1,6 +1,7 @@
 package com.pushpro.app.net
 
 import android.content.Context
+import android.content.SharedPreferences
 import com.pushpro.app.util.LogUtil
 import java.io.BufferedOutputStream
 import java.io.BufferedReader
@@ -81,6 +82,29 @@ object Sender {
     private fun normalizePkg(pkg: String): String =
         pkg.replace(Regex("\\.clone(\\d+)\\.clone\\1$"), ".clone$1")
 
+    private fun loadBlacklist(prefs: SharedPreferences): Set<String> {
+        return try {
+            prefs.getStringSet("blacklist_set", null)?.toSet()
+                ?: run {
+                    val legacy = prefs.getString("blacklist_set", "") ?: ""
+                    if (legacy.isBlank()) emptySet()
+                    else legacy.split(',')
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                        .toSet()
+                }
+        } catch (e: ClassCastException) {
+            val legacy = prefs.getString("blacklist_set", "") ?: ""
+            if (legacy.isBlank()) emptySet()
+            else legacy.split(',')
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .toSet()
+        } catch (_: Throwable) {
+            emptySet()
+        }
+    }
+
     // Public tests
     fun sendWebhookTest(
         ctx: Context,
@@ -143,7 +167,7 @@ object Sender {
         // Global blacklist check
         run {
             val b = ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE)
-            val blocked = b.getStringSet("blacklist_set", emptySet()) ?: emptySet()
+            val blocked = loadBlacklist(b)
             if (blocked.contains(pkg)) {
                 LogUtil.append(ctx, "Blocked by blacklist: $pkg")
                 return

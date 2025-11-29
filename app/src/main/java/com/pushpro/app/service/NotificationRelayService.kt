@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Context
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.service.notification.NotificationListenerService
@@ -84,6 +85,29 @@ class NotificationRelayService : NotificationListenerService() {
 
     // --- Hilfen ---
 
+    private fun loadBlacklist(prefs: SharedPreferences): Set<String> {
+        return try {
+            prefs.getStringSet("blacklist_set", null)?.toSet()
+                ?: run {
+                    val legacy = prefs.getString("blacklist_set", "") ?: ""
+                    if (legacy.isBlank()) emptySet()
+                    else legacy.split(',')
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                        .toSet()
+                }
+        } catch (e: ClassCastException) {
+            val legacy = prefs.getString("blacklist_set", "") ?: ""
+            if (legacy.isBlank()) emptySet()
+            else legacy.split(',')
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .toSet()
+        } catch (_: Throwable) {
+            emptySet()
+        }
+    }
+
     private fun normalizePkg(pkg: String): String {
         // Fix: Backslashes im Regex doppelt escapen
         return pkg.replace(Regex("\\.clone(\\d+)\\.clone\\1$"), ".clone$1")
@@ -91,7 +115,7 @@ class NotificationRelayService : NotificationListenerService() {
 
     private fun isBlockedPackage(rawPkg: String): Boolean {
         val prefs = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
-        val blocked = prefs.getStringSet("blacklist_set", emptySet()) ?: emptySet()
+        val blocked = loadBlacklist(prefs)
         if (blocked.isEmpty()) return false
         val norm = normalizePkg(rawPkg)
         return blocked.any { rule ->
