@@ -23,8 +23,32 @@ class BlacklistActivity : AppCompatActivity() {
         recycler.layoutManager = LinearLayoutManager(this)
 
         val prefs = getSharedPreferences("pushpro_prefs", MODE_PRIVATE)
-        // Immer Kopie anlegen – getStringSet liefert eine Live-View
-        val blocked = (prefs.getStringSet("blacklist_set", emptySet()) ?: emptySet()).toMutableSet()
+
+        // Sicheres Laden: Set oder Legacy-String → Set, ohne ClassCastException
+        val blocked: MutableSet<String> = run {
+            val fromSet = try {
+                @Suppress("UNCHECKED_CAST")
+                prefs.getStringSet("blacklist_set", null)
+            } catch (_: ClassCastException) {
+                null
+            }
+
+            val asSet = if (fromSet != null) {
+                fromSet
+            } else {
+                val legacy = prefs.getString("blacklist_set", "") ?: ""
+                if (legacy.isBlank()) {
+                    emptySet()
+                } else {
+                    legacy.split(',')
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                        .toSet()
+                }
+            }
+
+            asSet.toMutableSet()
+        }
 
         val pm = packageManager
         val myPkg = packageName
