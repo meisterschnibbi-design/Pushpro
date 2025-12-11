@@ -164,6 +164,16 @@ object Sender {
 
         val p = ctx.getSharedPreferences("prefs", Context.MODE_PRIVATE)
 
+        // NEU: Flags aus altem prefs ODER neuen Settings aus pushpro_prefs
+        val webhookEnabled = p.getBoolean("wh_enabled", false) ||
+                pStatus.getBoolean("webhook_enabled", false)
+
+        val emailEnabled = p.getBoolean("email_enabled", false) ||
+                pStatus.getBoolean("email_enabled", false)
+
+        val telegramEnabled = p.getBoolean("tg_enabled", false) ||
+                pStatus.getBoolean("telegram_enabled", false)
+
         // Global blacklist check
         run {
             val b = ctx.getSharedPreferences("pushpro_prefs", Context.MODE_PRIVATE)
@@ -175,7 +185,7 @@ object Sender {
         }
 
         // WEBHOOK
-        if (p.getBoolean("wh_enabled", false) &&
+        if (webhookEnabled &&
             allowByWhitelist(p.getString("wh_whitelist", ""), cleanTitle, cleanText, pkg) &&
             matchContains(p.getString("wh_contains", ""), cleanTitle, cleanText, pkg)
         ) {
@@ -198,7 +208,7 @@ object Sender {
         }
 
         // EMAIL  (wieder aktiviert)
-        if (p.getBoolean("email_enabled", false) &&
+        if (emailEnabled &&
             allowByWhitelist(p.getString("email_input_whitelist", ""), cleanTitle, cleanText, pkg) &&
             matchContains(p.getString("email_input_contains", ""), cleanTitle, cleanText, pkg)
         ) {
@@ -229,7 +239,7 @@ object Sender {
         }
 
         // TELEGRAM
-        if (p.getBoolean("tg_enabled", false) &&
+        if (telegramEnabled &&
             allowByWhitelist(p.getString("tg_whitelist", ""), cleanTitle, cleanText, pkg) &&
             matchContains(p.getString("tg_contains", ""), cleanTitle, cleanText, pkg)
         ) {
